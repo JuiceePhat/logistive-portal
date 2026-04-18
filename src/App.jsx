@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Eye,
@@ -27,44 +26,8 @@ const COMPANY = {
   name: "Logistive LLC",
   logo: "/logistive-logo.png",
   employeePortalTitle: "Employee Self Service",
-  buildTag: "April 18 loading fix",
+  buildTag: "April 18 secure portal",
 };
-
-const EMPLOYEES = [
-  {
-    username: "terridh9",
-    name: "Terrianna Howard",
-    employeeId: "EMP-1001",
-    department: "Operations",
-    position: "Parcel Auditor",
-    location: "Stone Mountain, GA",
-    email: "terridh9@logistive-employee.com",
-    phone: "(404) 555-0112",
-    address: "999 Ashton Oak Circle\nStone Mountain, GA 30083",
-  },
-  {
-    username: "georgequalls14",
-    name: "George Qualls",
-    employeeId: "EMP-1002",
-    department: "Logistics",
-    position: "Parcel Auditor",
-    location: "Atlanta, GA",
-    email: "georgequalls14@logistive-employee.com",
-    phone: "(404) 555-0148",
-    address: "883 Cascade Parkway\nAtlanta, GA 30311",
-  },
-  {
-    username: "emp101",
-    name: "Employee 101",
-    employeeId: "EMP-1010",
-    department: "Warehouse",
-    position: "Parcel Auditor",
-    location: "Decatur, GA",
-    email: "emp101@logistive-employee.com",
-    phone: "(404) 555-0174",
-    address: "2074 Glenwood Road\nDecatur, GA 30032",
-  },
-];
 
 const PAY_DATA = {
   terridh9: {
@@ -73,23 +36,23 @@ const PAY_DATA = {
     accountMask: "Account ending in 3581",
     nextPayDate: "2026-05-10",
     paystubs: [
-    {
-        "id": "PS-2026-04-10",
-        "payDate": "2026-04-10",
-        "periodStart": "2026-03-10",
-        "periodEnd": "2026-04-09",
-        "grossPay": 4380.0,
-        "overtime": 0.0,
-        "bonus": 0.0,
-        "federalTax": 406.21,
-        "stateTax": 133.4,
-        "socialSecurity": 218.16,
-        "medicare": 51.02,
-        "otherDeductions": 0.38,
-        "netPay": 3570.83,
-        "pdfPath": "/paystubs/Terrianna_Howard_2026-04-10_paystub.pdf"
-    }
-],
+      {
+        id: "PS-2026-04-10",
+        payDate: "2026-04-10",
+        periodStart: "2026-03-10",
+        periodEnd: "2026-04-09",
+        grossPay: 4380.0,
+        overtime: 0.0,
+        bonus: 0.0,
+        federalTax: 406.21,
+        stateTax: 133.4,
+        socialSecurity: 218.16,
+        medicare: 51.02,
+        otherDeductions: 0.38,
+        netPay: 3570.83,
+        pdfPath: "/paystubs/Terrianna_Howard_2026-04-10_paystub.pdf",
+      },
+    ],
   },
   georgequalls14: {
     paySchedule: "Biweekly",
@@ -97,103 +60,103 @@ const PAY_DATA = {
     accountMask: "Account ending in 4412",
     nextPayDate: "2026-04-24",
     paystubs: [
-    {
-        "id": "PS-2026-04-10",
-        "payDate": "2026-04-10",
-        "periodStart": "2026-03-27",
-        "periodEnd": "2026-04-09",
-        "grossPay": 4260,
-        "bonus": 60,
-        "overtime": 0.0,
-        "federalTax": 445.17,
-        "stateTax": 229.61,
-        "socialSecurity": 264.12,
-        "medicare": 61.77,
-        "otherDeductions": 0.39,
-        "netPay": 3258.94,
-        "pdfPath": "/paystubs/George_Qualls_2026-04-10_paystub.pdf"
-    },
-    {
-        "id": "PS-2026-03-13",
-        "payDate": "2026-03-13",
-        "periodStart": "2026-02-27",
-        "periodEnd": "2026-03-12",
-        "grossPay": 4515,
-        "bonus": 315,
-        "overtime": 0.0,
-        "federalTax": 492.14,
-        "stateTax": 243.36,
-        "socialSecurity": 279.93,
-        "medicare": 65.47,
-        "otherDeductions": 0.47,
-        "netPay": 3433.63,
-        "pdfPath": "/paystubs/George_Qualls_2026-03-13_paystub.pdf"
-    },
-    {
-        "id": "PS-2026-02-27",
-        "payDate": "2026-02-27",
-        "periodStart": "2026-02-13",
-        "periodEnd": "2026-02-26",
-        "grossPay": 4285,
-        "bonus": 85,
-        "overtime": 0.0,
-        "federalTax": 441.35,
-        "stateTax": 230.96,
-        "socialSecurity": 265.67,
-        "medicare": 62.13,
-        "otherDeductions": 0.41,
-        "netPay": 3284.48,
-        "pdfPath": "/paystubs/George_Qualls_2026-02-27_paystub.pdf"
-    },
-    {
-        "id": "PS-2026-02-13",
-        "payDate": "2026-02-13",
-        "periodStart": "2026-01-30",
-        "periodEnd": "2026-02-12",
-        "grossPay": 4420,
-        "bonus": 220,
-        "overtime": 0.0,
-        "federalTax": 472.94,
-        "stateTax": 238.24,
-        "socialSecurity": 274.04,
-        "medicare": 64.09,
-        "otherDeductions": 0.44,
-        "netPay": 3370.25,
-        "pdfPath": "/paystubs/George_Qualls_2026-02-13_paystub.pdf"
-    },
-    {
-        "id": "PS-2026-01-30",
-        "payDate": "2026-01-30",
-        "periodStart": "2026-01-16",
-        "periodEnd": "2026-01-29",
-        "grossPay": 4200,
-        "bonus": 0,
-        "overtime": 0.0,
-        "federalTax": 428.4,
-        "stateTax": 226.38,
-        "socialSecurity": 260.4,
-        "medicare": 60.9,
-        "otherDeductions": 0.38,
-        "netPay": 3223.54,
-        "pdfPath": "/paystubs/George_Qualls_2026-01-30_paystub.pdf"
-    },
-    {
-        "id": "PS-2026-01-16",
-        "payDate": "2026-01-16",
-        "periodStart": "2026-01-02",
-        "periodEnd": "2026-01-15",
-        "grossPay": 4345,
-        "bonus": 145,
-        "overtime": 0.0,
-        "federalTax": 451.88,
-        "stateTax": 234.2,
-        "socialSecurity": 269.39,
-        "medicare": 63.0,
-        "otherDeductions": 0.42,
-        "netPay": 3326.11,
-        "pdfPath": "/paystubs/George_Qualls_2026-01-16_paystub.pdf"
-    }
-],
+      {
+        id: "PS-2026-04-10",
+        payDate: "2026-04-10",
+        periodStart: "2026-03-27",
+        periodEnd: "2026-04-09",
+        grossPay: 4260,
+        bonus: 60,
+        overtime: 0.0,
+        federalTax: 445.17,
+        stateTax: 229.61,
+        socialSecurity: 264.12,
+        medicare: 61.77,
+        otherDeductions: 0.39,
+        netPay: 3258.94,
+        pdfPath: "/paystubs/George_Qualls_2026-04-10_paystub.pdf",
+      },
+      {
+        id: "PS-2026-03-13",
+        payDate: "2026-03-13",
+        periodStart: "2026-02-27",
+        periodEnd: "2026-03-12",
+        grossPay: 4515,
+        bonus: 315,
+        overtime: 0.0,
+        federalTax: 492.14,
+        stateTax: 243.36,
+        socialSecurity: 279.93,
+        medicare: 65.47,
+        otherDeductions: 0.47,
+        netPay: 3433.63,
+        pdfPath: "/paystubs/George_Qualls_2026-03-13_paystub.pdf",
+      },
+      {
+        id: "PS-2026-02-27",
+        payDate: "2026-02-27",
+        periodStart: "2026-02-13",
+        periodEnd: "2026-02-26",
+        grossPay: 4285,
+        bonus: 85,
+        overtime: 0.0,
+        federalTax: 441.35,
+        stateTax: 230.96,
+        socialSecurity: 265.67,
+        medicare: 62.13,
+        otherDeductions: 0.41,
+        netPay: 3284.48,
+        pdfPath: "/paystubs/George_Qualls_2026-02-27_paystub.pdf",
+      },
+      {
+        id: "PS-2026-02-13",
+        payDate: "2026-02-13",
+        periodStart: "2026-01-30",
+        periodEnd: "2026-02-12",
+        grossPay: 4420,
+        bonus: 220,
+        overtime: 0.0,
+        federalTax: 472.94,
+        stateTax: 238.24,
+        socialSecurity: 274.04,
+        medicare: 64.09,
+        otherDeductions: 0.44,
+        netPay: 3370.25,
+        pdfPath: "/paystubs/George_Qualls_2026-02-13_paystub.pdf",
+      },
+      {
+        id: "PS-2026-01-30",
+        payDate: "2026-01-30",
+        periodStart: "2026-01-16",
+        periodEnd: "2026-01-29",
+        grossPay: 4200,
+        bonus: 0,
+        overtime: 0.0,
+        federalTax: 428.4,
+        stateTax: 226.38,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        otherDeductions: 0.38,
+        netPay: 3223.54,
+        pdfPath: "/paystubs/George_Qualls_2026-01-30_paystub.pdf",
+      },
+      {
+        id: "PS-2026-01-16",
+        payDate: "2026-01-16",
+        periodStart: "2026-01-02",
+        periodEnd: "2026-01-15",
+        grossPay: 4345,
+        bonus: 145,
+        overtime: 0.0,
+        federalTax: 451.88,
+        stateTax: 234.2,
+        socialSecurity: 269.39,
+        medicare: 63.0,
+        otherDeductions: 0.42,
+        netPay: 3326.11,
+        pdfPath: "/paystubs/George_Qualls_2026-01-16_paystub.pdf",
+      },
+    ],
   },
   emp101: {
     paySchedule: "Weekly",
@@ -201,39 +164,39 @@ const PAY_DATA = {
     accountMask: "Example record only",
     nextPayDate: "2026-04-17",
     paystubs: [
-    {
-        "id": "PS-2026-04-10",
-        "payDate": "2026-04-10",
-        "periodStart": "2026-04-04",
-        "periodEnd": "2026-04-10",
-        "grossPay": 2385.0,
-        "bonus": 0.0,
-        "overtime": 0.0,
-        "federalTax": 194.38,
-        "stateTax": 103.75,
-        "socialSecurity": 147.87,
-        "medicare": 34.58,
-        "otherDeductions": 26.75,
-        "netPay": 1877.67,
-        "pdfPath": "/paystubs/Employee_101_2026-04-10_example_paystub.pdf"
-    },
-    {
-        "id": "PS-2026-04-03",
-        "payDate": "2026-04-03",
-        "periodStart": "2026-03-28",
-        "periodEnd": "2026-04-03",
-        "grossPay": 2310.0,
-        "bonus": 0.0,
-        "overtime": 0.0,
-        "federalTax": 188.27,
-        "stateTax": 100.49,
-        "socialSecurity": 143.22,
-        "medicare": 33.5,
-        "otherDeductions": 22.5,
-        "netPay": 1822.02,
-        "pdfPath": "/paystubs/Employee_101_2026-04-03_example_paystub.pdf"
-    }
-],
+      {
+        id: "PS-2026-04-10",
+        payDate: "2026-04-10",
+        periodStart: "2026-04-04",
+        periodEnd: "2026-04-10",
+        grossPay: 2385.0,
+        bonus: 0.0,
+        overtime: 0.0,
+        federalTax: 194.38,
+        stateTax: 103.75,
+        socialSecurity: 147.87,
+        medicare: 34.58,
+        otherDeductions: 26.75,
+        netPay: 1877.67,
+        pdfPath: "/paystubs/Employee_101_2026-04-10_example_paystub.pdf",
+      },
+      {
+        id: "PS-2026-04-03",
+        payDate: "2026-04-03",
+        periodStart: "2026-03-28",
+        periodEnd: "2026-04-03",
+        grossPay: 2310.0,
+        bonus: 0.0,
+        overtime: 0.0,
+        federalTax: 188.27,
+        stateTax: 100.49,
+        socialSecurity: 143.22,
+        medicare: 33.5,
+        otherDeductions: 22.5,
+        netPay: 1822.02,
+        pdfPath: "/paystubs/Employee_101_2026-04-03_example_paystub.pdf",
+      },
+    ],
   },
 };
 
@@ -272,19 +235,73 @@ const W2_DATA = {
 
 const TRACKING_DATA = {
   terridh9: [
-    { id: "LGT2404017781", date: "2026-04-01", destination: "Charlotte, NC", status: "Delivered", recipient: "Terrianna Howard" },
-    { id: "LGT2404058827", date: "2026-04-05", destination: "Jacksonville, FL", status: "In Transit", recipient: "Terrianna Howard" },
-    { id: "LGT2404092055", date: "2026-04-09", destination: "Memphis, TN", status: "Processing", recipient: "Terrianna Howard" },
+    {
+      id: "LGT2404017781",
+      date: "2026-04-01",
+      destination: "Charlotte, NC",
+      status: "Delivered",
+      recipient: "Terrianna Howard",
+    },
+    {
+      id: "LGT2404058827",
+      date: "2026-04-05",
+      destination: "Jacksonville, FL",
+      status: "In Transit",
+      recipient: "Terrianna Howard",
+    },
+    {
+      id: "LGT2404092055",
+      date: "2026-04-09",
+      destination: "Memphis, TN",
+      status: "Processing",
+      recipient: "Terrianna Howard",
+    },
   ],
   georgequalls14: [
-    { id: "LGT2404026601", date: "2026-04-02", destination: "Charlotte, NC", status: "Delivered", recipient: "George Qualls" },
-    { id: "LGT2404121184", date: "2026-04-12", destination: "Memphis, TN", status: "Processing", recipient: "George Qualls" },
-    { id: "LGT2404297108", date: "2026-04-29", destination: "Houston, TX", status: "In Transit", recipient: "George Qualls" },
+    {
+      id: "LGT2404026601",
+      date: "2026-04-02",
+      destination: "Charlotte, NC",
+      status: "Delivered",
+      recipient: "George Qualls",
+    },
+    {
+      id: "LGT2404121184",
+      date: "2026-04-12",
+      destination: "Memphis, TN",
+      status: "Processing",
+      recipient: "George Qualls",
+    },
+    {
+      id: "LGT2404297108",
+      date: "2026-04-29",
+      destination: "Houston, TX",
+      status: "In Transit",
+      recipient: "George Qualls",
+    },
   ],
   emp101: [
-    { id: "LGT2404019001", date: "2026-04-01", destination: "Charlotte, NC", status: "Delivered", recipient: "Employee 101" },
-    { id: "LGT2404113377", date: "2026-04-11", destination: "Memphis, TN", status: "Processing", recipient: "Employee 101" },
-    { id: "LGT2404289943", date: "2026-04-28", destination: "Houston, TX", status: "In Transit", recipient: "Employee 101" },
+    {
+      id: "LGT2404019001",
+      date: "2026-04-01",
+      destination: "Charlotte, NC",
+      status: "Delivered",
+      recipient: "Employee 101",
+    },
+    {
+      id: "LGT2404113377",
+      date: "2026-04-11",
+      destination: "Memphis, TN",
+      status: "Processing",
+      recipient: "Employee 101",
+    },
+    {
+      id: "LGT2404289943",
+      date: "2026-04-28",
+      destination: "Houston, TX",
+      status: "In Transit",
+      recipient: "Employee 101",
+    },
   ],
 };
 
@@ -294,6 +311,8 @@ function parseLocalDate(dateString) {
 }
 
 function formatDate(dateString) {
+  if (!dateString) return "Not available";
+
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
     day: "numeric",
@@ -306,6 +325,20 @@ function formatCurrency(value) {
     style: "currency",
     currency: "USD",
   }).format(value || 0);
+}
+
+function mapDirectoryEmployee(row) {
+  return {
+    username: row.username,
+    name: row.full_name || row.username,
+    employeeId: row.employee_id || "",
+    department: row.department || "",
+    position: row.position || "",
+    location: row.location || "",
+    email: row.auth_email || "",
+    phone: "",
+    address: "",
+  };
 }
 
 function downloadPaystub(stub) {
@@ -406,7 +439,9 @@ function Topbar({ employee }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
       <div>
-        <div className="text-sm text-slate-500">{COMPANY.employeePortalTitle} • {COMPANY.buildTag}</div>
+        <div className="text-sm text-slate-500">
+          {COMPANY.employeePortalTitle} • {COMPANY.buildTag}
+        </div>
         <h1 className="text-3xl font-bold text-slate-950">
           Welcome back, {employee.name?.split(" ")[0] || "Employee"}
         </h1>
@@ -745,7 +780,9 @@ function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
     setSaving(false);
 
     if (result?.success) {
-      setSavedMessage("Direct deposit updated successfully.");
+      setSavedMessage(
+        "Direct deposit updated successfully. Changes made after payroll has closed will take effect on the next pay cycle."
+      );
     } else {
       setSavedMessage("Unable to update direct deposit.");
     }
@@ -783,6 +820,10 @@ function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
       <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
         <div className="text-sm text-slate-500">Deposit details</div>
         <h2 className="text-2xl font-bold text-slate-950 mt-1">Banking information</h2>
+
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Direct deposit changes submitted after payroll has closed will take effect on the next pay cycle.
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <div>
@@ -898,7 +939,10 @@ function TaxDocumentsPage({ employee }) {
       ) : (
         <div className="mt-8 space-y-3">
           {docs.map((doc) => (
-            <div key={doc.id} className="rounded-2xl border border-slate-200 p-5 flex items-center justify-between gap-4">
+            <div
+              key={doc.id}
+              className="rounded-2xl border border-slate-200 p-5 flex items-center justify-between gap-4"
+            >
               <div>
                 <div className="font-semibold text-slate-950">{doc.label}</div>
                 <div className="text-sm text-slate-500 mt-1">{doc.year}</div>
@@ -1024,14 +1068,20 @@ function TrackingPage({ employee }) {
   );
 }
 
-function ProfilePage({ employee, profile, onSaveProfile }) {
+function ProfilePage({ employee, profile, onSaveProfile, onBack }) {
   const [formData, setFormData] = useState(profile);
   const [savedMessage, setSavedMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setFormData(profile);
-  }, [profile]);
+    setFormData(
+      profile || {
+        email: employee.email || "",
+        phone: "",
+        address: "",
+      }
+    );
+  }, [profile, employee]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({
@@ -1067,9 +1117,17 @@ function ProfilePage({ employee, profile, onSaveProfile }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4">
-          <div className="text-xs text-slate-500">Employee ID</div>
-          <div className="font-semibold text-slate-950">{employee.employeeId}</div>
+        <div className="flex gap-3">
+          <button
+            onClick={onBack}
+            className="rounded-2xl border border-slate-300 px-5 py-3 text-slate-700 hover:bg-slate-50"
+          >
+            Back
+          </button>
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4">
+            <div className="text-xs text-slate-500">Employee ID</div>
+            <div className="font-semibold text-slate-950">{employee.employeeId}</div>
+          </div>
         </div>
       </div>
 
@@ -1100,7 +1158,7 @@ function ProfilePage({ employee, profile, onSaveProfile }) {
           <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
             <div className="text-sm text-slate-500 mb-3">Security notice</div>
             <div className="text-sm text-slate-700">
-              Usernames are not case sensitive. Passwords remain case sensitive.
+              Passwords are case sensitive. For security, this portal logs users out after 7 minutes of inactivity.
             </div>
           </div>
         </div>
@@ -1130,7 +1188,7 @@ function ProfilePage({ employee, profile, onSaveProfile }) {
               <div className="mt-2 relative">
                 <Mail className="h-5 w-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
-                  value={formData.email}
+                  value={formData?.email || ""}
                   onChange={(e) => handleChange("email", e.target.value)}
                   className="w-full rounded-2xl border border-slate-300 pl-12 pr-4 py-3 outline-none focus:border-slate-950"
                   placeholder="Email address"
@@ -1143,7 +1201,7 @@ function ProfilePage({ employee, profile, onSaveProfile }) {
               <div className="mt-2 relative">
                 <Phone className="h-5 w-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
-                  value={formData.phone}
+                  value={formData?.phone || ""}
                   onChange={(e) => handleChange("phone", e.target.value)}
                   className="w-full rounded-2xl border border-slate-300 pl-12 pr-4 py-3 outline-none focus:border-slate-950"
                   placeholder="Phone number"
@@ -1157,7 +1215,7 @@ function ProfilePage({ employee, profile, onSaveProfile }) {
             <div className="mt-2 relative">
               <MapPin className="h-5 w-5 text-slate-400 absolute left-4 top-4" />
               <textarea
-                value={formData.address}
+                value={formData?.address || ""}
                 onChange={(e) => handleChange("address", e.target.value)}
                 rows={5}
                 className="w-full rounded-2xl border border-slate-300 pl-12 pr-4 py-3 outline-none focus:border-slate-950 resize-none"
@@ -1297,7 +1355,7 @@ function HelpPage() {
 }
 
 function LoginPage({ onLogin }) {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -1306,90 +1364,47 @@ function LoginPage({ onLogin }) {
   const submitLogin = async (e) => {
     e.preventDefault();
     if (loading) return;
+
     setError("");
     setLoading(true);
 
-    const loginTimeoutMs = 12000;
-
     try {
-      const normalizedUsername = username.trim().toLowerCase();
+      const normalizedEmail = email.trim().toLowerCase();
 
-      if (!normalizedUsername || !password) {
-        setError("Enter your username and password.");
+      if (!normalizedEmail || !password) {
+        setError("Enter your email and password.");
         return;
       }
 
-      // Clear any stale local auth state before a fresh sign in attempt
-      try {
-        await supabase.auth.signOut();
-      } catch (signOutError) {
-        console.warn("Pre-login sign out warning:", signOutError);
-      }
-
-      const { data: directoryRows, error: directoryError } = await supabase
-        .from("employee_directory")
-        .select("*")
-        .eq("username", normalizedUsername)
-        .limit(1);
-
-      if (directoryError) {
-        console.error("Directory lookup error:", directoryError);
-        setError("Unable to verify employee account.");
-        return;
-      }
-
-      if (!directoryRows || directoryRows.length === 0) {
-        setError("Invalid username or password.");
-        return;
-      }
-
-      const directoryRow = directoryRows[0];
-
-      const signInPromise = supabase.auth.signInWithPassword({
-        email: directoryRow.auth_email,
-        password,
-      });
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("LOGIN_TIMEOUT")), loginTimeoutMs)
-      );
-
-      const { data: authData, error: signInError } = await Promise.race([
-        signInPromise,
-        timeoutPromise,
-      ]);
+      const { data: authData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
 
       if (signInError || !authData?.user) {
         console.error("Sign in error:", signInError);
-        setError("Invalid username or password.");
+        setError(signInError?.message || "Login failed.");
         return;
       }
 
-      const employeeMatch = EMPLOYEES.find(
-        (emp) => emp.username.toLowerCase() === normalizedUsername
-      );
+      const { data: directoryRow, error: directoryError } = await supabase
+        .from("employee_directory")
+        .select("*")
+        .eq("auth_email", normalizedEmail)
+        .single();
 
-      const authenticatedEmployee = employeeMatch || {
-        username: directoryRow.username,
-        name: directoryRow.full_name || directoryRow.username,
-        employeeId: directoryRow.employee_id || "",
-        department: directoryRow.department || "",
-        position: directoryRow.position || "",
-        location: directoryRow.location || "",
-        email: directoryRow.auth_email || "",
-        phone: "",
-        address: "",
-      };
-
-      onLogin(authenticatedEmployee);
-    } catch (error) {
-      console.error("Login error:", error);
-
-      if (error?.message === "LOGIN_TIMEOUT") {
-        setError("Sign in timed out. Close extra portal tabs, refresh once, and try again.");
-      } else {
-        setError("Something went wrong while signing in.");
+      if (directoryError || !directoryRow) {
+        console.error("Employee record load error:", directoryError);
+        setError("Employee record not found.");
+        await supabase.auth.signOut();
+        return;
       }
+
+      onLogin(mapDirectoryEmployee(directoryRow));
+    } catch (loginError) {
+      console.error("Login error:", loginError);
+      setError(loginError?.message || "Something went wrong while signing in.");
     } finally {
       setLoading(false);
     }
@@ -1424,20 +1439,22 @@ function LoginPage({ onLogin }) {
 
           <div className="p-8 lg:p-14 flex items-center">
             <form onSubmit={submitLogin} className="w-full max-w-md mx-auto">
-              <div className="text-sm text-slate-500">{COMPANY.employeePortalTitle} • {COMPANY.buildTag}</div>
+              <div className="text-sm text-slate-500">
+                {COMPANY.employeePortalTitle} • {COMPANY.buildTag}
+              </div>
               <h2 className="text-3xl font-bold text-slate-950 mt-1">Sign in</h2>
               <p className="text-sm text-slate-600 mt-2">
-                Use your employee credentials to access your secure account.
+                Use your employee email and password to access your secure account.
               </p>
 
               <div className="mt-8 space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Username</label>
+                  <label className="text-sm font-medium text-slate-700">Email</label>
                   <input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-                    placeholder="Enter username"
+                    placeholder="Enter email"
                   />
                 </div>
 
@@ -1496,40 +1513,35 @@ function ProtectedApp({ employee, logout }) {
     let cancelled = false;
 
     const loadProfiles = async () => {
-      const { data, error } = await supabase.from("employee_profiles").select("*");
+      const employeeKey = employee.username.toLowerCase();
+
+      const { data, error } = await supabase
+        .from("employee_profiles")
+        .select("employee_username, email, phone, address")
+        .eq("employee_username", employeeKey)
+        .maybeSingle();
 
       if (cancelled) return;
 
-      if (error || !data) {
-        const fallback = {};
-        EMPLOYEES.forEach((emp) => {
-          fallback[emp.username.toLowerCase()] = {
-            email: emp.email,
-            phone: emp.phone,
-            address: emp.address,
-          };
-        });
-        setEmployeeProfiles(fallback);
-        setProfilesLoaded(true);
-        return;
+      if (error) {
+        console.error("Profile load error:", error);
       }
 
-      const mapped = {};
-      EMPLOYEES.forEach((emp) => {
-        mapped[emp.username.toLowerCase()] = {
-          email: emp.email,
-          phone: emp.phone,
-          address: emp.address,
-        };
-      });
+      const fallbackProfile = {
+        email: employee.email || "",
+        phone: employee.phone || "",
+        address: employee.address || "",
+      };
 
-      data.forEach((row) => {
-        mapped[row.employee_username.toLowerCase()] = {
-          email: row.email || "",
-          phone: row.phone || "",
-          address: row.address || "",
-        };
-      });
+      const mapped = {
+        [employeeKey]: data
+          ? {
+              email: data.email || "",
+              phone: data.phone || "",
+              address: data.address || "",
+            }
+          : fallbackProfile,
+      };
 
       setEmployeeProfiles(mapped);
       setProfilesLoaded(true);
@@ -1540,41 +1552,49 @@ function ProtectedApp({ employee, logout }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [employee]);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadDeposits = async () => {
-      const { data, error } = await supabase.from("employee_direct_deposit").select("*");
+      const employeeKey = employee.username.toLowerCase();
+
+      const { data, error } = await supabase
+        .from("employee_direct_deposit")
+        .select(
+          "employee_username, status, bank_name, account_type, routing_mask, account_mask, effective_date"
+        )
+        .eq("employee_username", employeeKey)
+        .maybeSingle();
 
       if (cancelled) return;
 
-      if (error || !data) {
-        const fallback = {};
-        Object.keys(DIRECT_DEPOSIT_DATA).forEach((key) => {
-          fallback[key] = DIRECT_DEPOSIT_DATA[key];
-        });
-        setDepositRecords(fallback);
-        setDepositLoaded(true);
-        return;
+      if (error) {
+        console.error("Direct deposit load error:", error);
       }
 
-      const mapped = {};
-      Object.keys(DIRECT_DEPOSIT_DATA).forEach((key) => {
-        mapped[key] = DIRECT_DEPOSIT_DATA[key];
-      });
+      const fallbackDeposit = DIRECT_DEPOSIT_DATA[employeeKey] || {
+        status: "Not enrolled",
+        bankName: "",
+        accountType: "Checking",
+        routingMask: "",
+        accountMask: "",
+        effectiveDate: "",
+      };
 
-      data.forEach((row) => {
-        mapped[row.employee_username.toLowerCase()] = {
-          status: row.status || "Not enrolled",
-          bankName: row.bank_name || "",
-          accountType: row.account_type || "Checking",
-          routingMask: row.routing_mask || "",
-          accountMask: row.account_mask || "",
-          effectiveDate: row.effective_date || "",
-        };
-      });
+      const mapped = {
+        [employeeKey]: data
+          ? {
+              status: data.status || "Not enrolled",
+              bankName: data.bank_name || "",
+              accountType: data.account_type || "Checking",
+              routingMask: data.routing_mask || "",
+              accountMask: data.account_mask || "",
+              effectiveDate: data.effective_date || "",
+            }
+          : fallbackDeposit,
+      };
 
       setDepositRecords(mapped);
       setDepositLoaded(true);
@@ -1585,14 +1605,13 @@ function ProtectedApp({ employee, logout }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [employee]);
 
-  const activeProfile =
-    employeeProfiles[employee.username.toLowerCase()] || {
-      email: employee.email || "",
-      phone: employee.phone || "",
-      address: employee.address || "",
-    };
+  const activeProfile = employeeProfiles[employee.username.toLowerCase()] || {
+    email: employee.email || "",
+    phone: employee.phone || "",
+    address: employee.address || "",
+  };
 
   const handleSaveProfile = async (updatedProfile) => {
     const payload = {
@@ -1610,26 +1629,30 @@ function ProtectedApp({ employee, logout }) {
       .upsert(payload, { onConflict: "employee_username" });
 
     if (error) {
+      console.error("Profile update error:", error);
       return { success: false };
     }
 
     setEmployeeProfiles((prev) => ({
       ...prev,
-      [employee.username.toLowerCase()]: updatedProfile,
+      [employee.username.toLowerCase()]: {
+        email: updatedProfile.email,
+        phone: updatedProfile.phone,
+        address: updatedProfile.address,
+      },
     }));
 
     return { success: true };
   };
 
-  const activeDeposit =
-    depositRecords[employee.username.toLowerCase()] || {
-      status: "Not enrolled",
-      bankName: "",
-      accountType: "Checking",
-      routingMask: "",
-      accountMask: "",
-      effectiveDate: "",
-    };
+  const activeDeposit = depositRecords[employee.username.toLowerCase()] || {
+    status: "Not enrolled",
+    bankName: "",
+    accountType: "Checking",
+    routingMask: "",
+    accountMask: "",
+    effectiveDate: "",
+  };
 
   const handleSaveDeposit = async (updatedDeposit) => {
     const payload = {
@@ -1648,13 +1671,20 @@ function ProtectedApp({ employee, logout }) {
       .upsert(payload, { onConflict: "employee_username" });
 
     if (error) {
-      console.error(error);
+      console.error("Direct deposit update error:", error);
       return { success: false };
     }
 
     setDepositRecords((prev) => ({
       ...prev,
-      [employee.username.toLowerCase()]: updatedDeposit,
+      [employee.username.toLowerCase()]: {
+        status: updatedDeposit.status,
+        bankName: updatedDeposit.bankName,
+        accountType: updatedDeposit.accountType,
+        routingMask: updatedDeposit.routingMask,
+        accountMask: updatedDeposit.accountMask,
+        effectiveDate: updatedDeposit.effectiveDate,
+      },
     }));
 
     return { success: true };
@@ -1670,6 +1700,7 @@ function ProtectedApp({ employee, logout }) {
     }
 
     if (page === "pay") return <PayPage employee={employee} />;
+
     if (!depositLoaded && page === "deposit") {
       return (
         <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-8">
@@ -1677,6 +1708,7 @@ function ProtectedApp({ employee, logout }) {
         </div>
       );
     }
+
     if (page === "deposit") {
       return (
         <DirectDepositPage
@@ -1686,6 +1718,7 @@ function ProtectedApp({ employee, logout }) {
         />
       );
     }
+
     if (page === "taxes") return <TaxDocumentsPage employee={employee} />;
     if (page === "tracking") return <TrackingPage employee={employee} />;
     if (page === "profile") {
@@ -1694,6 +1727,7 @@ function ProtectedApp({ employee, logout }) {
           employee={employee}
           profile={activeProfile}
           onSaveProfile={handleSaveProfile}
+          onBack={() => setPage("dashboard")}
         />
       );
     }
@@ -1721,66 +1755,48 @@ function ProtectedApp({ employee, logout }) {
 
 export default function App() {
   const [authenticatedEmployee, setAuthenticatedEmployee] = useState(null);
-  const [authChecked, setAuthChecked] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     const hydrateEmployee = async (email) => {
-      const { data: directoryRow } = await supabase
+      const normalizedEmail = email?.toLowerCase?.() || "";
+
+      if (!normalizedEmail) return null;
+
+      const { data: directoryRow, error } = await supabase
         .from("employee_directory")
         .select("*")
-        .eq("auth_email", email)
+        .eq("auth_email", normalizedEmail)
         .single();
 
-      if (!directoryRow) return null;
+      if (error || !directoryRow) {
+        console.error("Session employee load error:", error);
+        return null;
+      }
 
-      const normalizedUsername = directoryRow.username.toLowerCase();
-
-      const employeeMatch = EMPLOYEES.find(
-        (emp) => emp.username.toLowerCase() === normalizedUsername
-      );
-
-      return (
-        employeeMatch || {
-          username: directoryRow.username,
-          name: directoryRow.full_name || directoryRow.username,
-          employeeId: directoryRow.employee_id || "",
-          department: directoryRow.department || "",
-          position: directoryRow.position || "",
-          location: directoryRow.location || "",
-          email: directoryRow.auth_email || "",
-          phone: "",
-          address: "",
-        }
-      );
+      return mapDirectoryEmployee(directoryRow);
     };
 
     const restoreSession = async () => {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-        if (error) {
-          console.error("Session error:", error);
-        }
+      if (!mounted) return;
 
-        if (!mounted) return;
-
-        if (session?.user?.email) {
-          const hydrated = await hydrateEmployee(session.user.email);
-          if (hydrated && mounted) {
-            setAuthenticatedEmployee(hydrated);
-          }
-        }
-      } catch (err) {
-        console.error("Restore session failed:", err);
-      } finally {
+      if (session?.user?.email) {
+        const employee = await hydrateEmployee(session.user.email);
         if (mounted) {
-          setAuthChecked(true);
+          setAuthenticatedEmployee(employee);
         }
+      } else {
+        setAuthenticatedEmployee(null);
+      }
+
+      if (mounted) {
+        setAuthChecked(true);
       }
     };
 
@@ -1789,20 +1805,18 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        if (!session?.user?.email) {
-          setAuthenticatedEmployee(null);
-          setAuthChecked(true);
-          return;
-        }
+      if (!mounted) return;
 
-        const hydrated = await hydrateEmployee(session.user.email);
-        if (hydrated) {
-          setAuthenticatedEmployee(hydrated);
+      if (session?.user?.email) {
+        const employee = await hydrateEmployee(session.user.email);
+        if (mounted) {
+          setAuthenticatedEmployee(employee);
         }
-      } catch (error) {
-        console.error("Auth state change error:", error);
-      } finally {
+      } else {
+        setAuthenticatedEmployee(null);
+      }
+
+      if (mounted) {
         setAuthChecked(true);
       }
     });
@@ -1813,13 +1827,57 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!authenticatedEmployee) return;
+
+    let inactivityTimer;
+
+    const logoutUser = async () => {
+      alert("You were logged out due to 7 minutes of inactivity.");
+      await supabase.auth.signOut();
+      setAuthenticatedEmployee(null);
+    };
+
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(logoutUser, 7 * 60 * 1000);
+    };
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, resetTimer);
+    });
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      events.forEach((eventName) => {
+        window.removeEventListener(eventName, resetTimer);
+      });
+    };
+  }, [authenticatedEmployee]);
+
+  const handleLogin = (employee) => {
+    setAuthenticatedEmployee(employee);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setAuthenticatedEmployee(null);
   };
 
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-700">
+        Loading secure portal...
+      </div>
+    );
+  }
+
   if (!authenticatedEmployee) {
-    return <LoginPage onLogin={setAuthenticatedEmployee} />;
+    return <LoginPage onLogin={handleLogin} />;
   }
 
   return <ProtectedApp employee={authenticatedEmployee} logout={handleLogout} />;
