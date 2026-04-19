@@ -1,621 +1,911 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import jsPDF from "jspdf";
 import {
+  AlertCircle,
+  ArrowLeft,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  CreditCard,
+  Download,
   Eye,
   EyeOff,
-  Download,
-  Printer,
-  CreditCard,
-  CalendarDays,
   FileText,
-  LogOut,
+  HelpCircle,
   LayoutGrid,
+  Loader2,
+  Lock,
+  LogOut,
+  Mail,
+  MapPin,
+  Phone,
+  Printer,
+  Shield,
   Truck,
   User,
-  HelpCircle,
-  Mail,
-  Phone,
-  Save,
-  MapPin,
-  Landmark,
-  BadgeDollarSign,
-  CircleDollarSign,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
-const COMPANY = {
-  name: "Logistive LLC",
-  logo: "/logistive-logo.png",
-  employeePortalTitle: "Employee Self Service",
-  buildTag: "April 18 secure portal",
+const LOGO_URL = "/logistive-logo.png";
+
+const ADMIN_USERNAMES = ["admin", "hradmin", "payrolladmin"];
+const SUPPORT_CONTACT = {
+  name: "Mark Moore",
+  email: "support@mylogistive.com",
+  phone: "(404) 555 0119",
 };
+
+const EMPLOYEE_DIRECTORY_FALLBACK = {
+  terridh9: {
+    username: "terridh9",
+    full_name: "Terrianna Howard",
+    employee_id: "EMP-1001",
+    department: "Operations",
+    position: "Parcel Auditor",
+    location: "Stone Mountain, GA",
+    auth_email: "terridh9@mylogistive.com",
+  },
+  georgequalls14: {
+    username: "georgequalls14",
+    full_name: "George Qualls",
+    employee_id: "EMP-1002",
+    department: "Logistics",
+    position: "Parcel Auditor",
+    location: "Atlanta, GA",
+    auth_email: "georgequalls14@mylogistive.com",
+  },
+  emp101: {
+    username: "emp101",
+    full_name: "Employee 101",
+    employee_id: "EMP-1010",
+    department: "Warehouse",
+    position: "Parcel Auditor",
+    location: "Decatur, GA",
+    auth_email: "emp101@mylogistive.com",
+  },
+};
+
+const formatMoney = (amount) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Number(amount || 0));
+
+const formatShortDate = (value) => {
+  const date = new Date(`${value}T12:00:00`);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const formatPayRange = (start, end) => `${formatShortDate(start)} to ${formatShortDate(end)}`;
+
+const maskAccountNumber = (value) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const last4 = digits.slice(-4);
+  return `••••${last4}`;
+};
+
+const maskRoutingNumber = (value) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const last4 = digits.slice(-4);
+  return `•••••${last4}`;
+};
+
+const getCurrentPeriodIndex = (paystubs) => {
+  const today = new Date();
+  const timed = paystubs.map((stub, index) => ({
+    index,
+    diff: Math.abs(new Date(`${stub.payDate}T12:00:00`) - today),
+  }));
+  timed.sort((a, b) => a.diff - b.diff);
+  return timed[0]?.index ?? 0;
+};
+
+const createTrackingItems = (recipientName) => [
+  {
+    trackingNumber: "LGT042601",
+    label: "Parcel Audit Return",
+    recipient: recipientName,
+    destination: "Atlanta, GA",
+    status: "Delivered",
+    date: "2026-04-02",
+  },
+  {
+    trackingNumber: "LGT042602",
+    label: "Warehouse Transfer",
+    recipient: recipientName,
+    destination: "Savannah, GA",
+    status: "In Transit",
+    date: "2026-04-03",
+  },
+  {
+    trackingNumber: "LGT042603",
+    label: "Priority Freight Review",
+    recipient: recipientName,
+    destination: "Macon, GA",
+    status: "Delivered",
+    date: "2026-04-04",
+  },
+  {
+    trackingNumber: "LGT042604",
+    label: "Regional Shipment",
+    recipient: recipientName,
+    destination: "Augusta, GA",
+    status: "Awaiting Pickup",
+    date: "2026-04-05",
+  },
+  {
+    trackingNumber: "LGT042605",
+    label: "Inventory Transfer",
+    recipient: recipientName,
+    destination: "Decatur, GA",
+    status: "Delivered",
+    date: "2026-04-06",
+  },
+  {
+    trackingNumber: "LGT042606",
+    label: "Claims Review Packet",
+    recipient: recipientName,
+    destination: "Athens, GA",
+    status: "In Transit",
+    date: "2026-04-07",
+  },
+  {
+    trackingNumber: "LGT042607",
+    label: "Route Audit Envelope",
+    recipient: recipientName,
+    destination: "Stone Mountain, GA",
+    status: "Delivered",
+    date: "2026-04-08",
+  },
+  {
+    trackingNumber: "LGT042608",
+    label: "Sorting Center File",
+    recipient: recipientName,
+    destination: "Atlanta, GA",
+    status: "Delivered",
+    date: "2026-04-09",
+  },
+  {
+    trackingNumber: "LGT042609",
+    label: "Operations Packet",
+    recipient: recipientName,
+    destination: "Marietta, GA",
+    status: "Out for Delivery",
+    date: "2026-04-10",
+  },
+  {
+    trackingNumber: "LGT042610",
+    label: "Facility Restock",
+    recipient: recipientName,
+    destination: "Roswell, GA",
+    status: "Delivered",
+    date: "2026-04-11",
+  },
+  {
+    trackingNumber: "LGT042611",
+    label: "Manifest Review",
+    recipient: recipientName,
+    destination: "Alpharetta, GA",
+    status: "Delivered",
+    date: "2026-04-12",
+  },
+  {
+    trackingNumber: "LGT042612",
+    label: "Dock Reconciliation",
+    recipient: recipientName,
+    destination: "College Park, GA",
+    status: "Processing",
+    date: "2026-04-13",
+  },
+];
 
 const PAY_DATA = {
   terridh9: {
-    paySchedule: "Biweekly",
-    payMethod: "Direct Deposit",
-    accountMask: "Account ending in 3581",
-    nextPayDate: "2026-04-24",
+    scheduleLabel: "Biweekly",
     paystubs: [
       {
-        id: "PS-2026-04-10",
+        id: "TERRI-2026-04-10",
         payDate: "2026-04-10",
-        periodStart: "2026-03-28",
+        periodStart: "2026-03-10",
         periodEnd: "2026-04-10",
-        grossPay: 2190.0,
-        overtime: 0.0,
-        bonus: 0.0,
-        federalTax: 203.11,
-        stateTax: 66.7,
-        socialSecurity: 135.78,
-        medicare: 31.96,
-        otherDeductions: 0.19,
-        netPay: 1752.26,
-        pdfPath: "/paystubs/Terrianna_Howard_2026-04-10_paystub.pdf",
-      },
-      {
-        id: "PS-2026-03-27",
-        payDate: "2026-03-27",
-        periodStart: "2026-03-14",
-        periodEnd: "2026-03-27",
-        grossPay: 2190.0,
-        overtime: 0.0,
-        bonus: 120.0,
-        federalTax: 214.22,
-        stateTax: 70.36,
-        socialSecurity: 143.22,
-        medicare: 33.5,
-        otherDeductions: 0.2,
-        netPay: 1848.5,
-        pdfPath: "/paystubs/Terrianna_Howard_2026-03-27_paystub.pdf",
-      },
-      {
-        id: "PS-2026-03-13",
-        payDate: "2026-03-13",
-        periodStart: "2026-02-28",
-        periodEnd: "2026-03-13",
-        grossPay: 2190.0,
-        overtime: 0.0,
-        bonus: 0.0,
-        federalTax: 205.18,
-        stateTax: 67.38,
-        socialSecurity: 135.78,
-        medicare: 31.96,
-        otherDeductions: 0.19,
-        netPay: 1749.51,
-        pdfPath: "/paystubs/Terrianna_Howard_2026-03-13_paystub.pdf",
-      },
-      {
-        id: "PS-2026-02-27",
-        payDate: "2026-02-27",
-        periodStart: "2026-01-29",
-        periodEnd: "2026-02-27",
-        grossPay: 4680.0,
-        overtime: 0.0,
-        bonus: 180.0,
-        federalTax: 454.25,
-        stateTax: 149.31,
-        socialSecurity: 301.32,
-        medicare: 70.47,
-        otherDeductions: 0.42,
-        netPay: 3884.23,
-        pdfPath: "/paystubs/Terrianna_Howard_2026-02-27_paystub.pdf",
-      },
-    ],
-  },
-  georgequalls14: {
-    paySchedule: "Biweekly",
-    payMethod: "Direct Deposit",
-    accountMask: "Account ending in 4412",
-    nextPayDate: "2026-04-24",
-    paystubs: [
-      {
-        id: "PS-2026-04-10",
-        payDate: "2026-04-10",
-        periodStart: "2026-03-28",
-        periodEnd: "2026-04-10",
-        grossPay: 2145,
-        bonus: 90,
-        overtime: 0.0,
-        federalTax: 215.63,
-        stateTax: 111.13,
-        socialSecurity: 138.57,
-        medicare: 32.41,
-        otherDeductions: 0.21,
-        netPay: 1737.05,
-        pdfPath: "/paystubs/George_Qualls_2026-04-10_paystub.pdf",
-      },
-      {
-        id: "PS-2026-03-27",
-        payDate: "2026-03-27",
-        periodStart: "2026-03-14",
-        periodEnd: "2026-03-27",
-        grossPay: 2145,
+        regularHours: 160,
+        hourlyRate: 26.25,
+        grossPay: 4200,
+        federalTax: 462,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        gaTax: 178.5,
+        deductions: 0,
         bonus: 0,
-        overtime: 0.0,
-        federalTax: 203.44,
-        stateTax: 105.18,
-        socialSecurity: 132.99,
-        medicare: 31.1,
-        otherDeductions: 0.18,
-        netPay: 1672.11,
-        pdfPath: "/paystubs/George_Qualls_2026-03-27_paystub.pdf",
-      },
-      {
-        id: "PS-2026-03-13",
-        payDate: "2026-03-13",
-        periodStart: "2026-02-28",
-        periodEnd: "2026-03-13",
-        grossPay: 2145,
-        bonus: 55,
-        overtime: 0.0,
-        federalTax: 209.02,
-        stateTax: 107.88,
-        socialSecurity: 136.4,
-        medicare: 31.9,
-        otherDeductions: 0.2,
-        netPay: 1714.6,
-        pdfPath: "/paystubs/George_Qualls_2026-03-13_paystub.pdf",
-      },
-      {
-        id: "PS-2026-02-27",
-        payDate: "2026-02-27",
-        periodStart: "2026-01-29",
-        periodEnd: "2026-02-27",
-        grossPay: 4590,
-        bonus: 140,
-        overtime: 0.0,
-        federalTax: 454.98,
-        stateTax: 232.11,
-        socialSecurity: 293.26,
-        medicare: 68.59,
-        otherDeductions: 0.46,
-        netPay: 3680.6,
-        pdfPath: "/paystubs/George_Qualls_2026-02-27_paystub.pdf",
+        netPay: 3238.2,
+        watermark: "",
       },
     ],
-  },
-  emp101: {
-    paySchedule: "Biweekly",
-    payMethod: "Paper Check",
-    accountMask: "Example record only",
-    nextPayDate: "2026-04-24",
-    paystubs: [
-      {
-        id: "PS-2026-04-10",
-        payDate: "2026-04-10",
-        periodStart: "2026-03-28",
-        periodEnd: "2026-04-10",
-        grossPay: 2385.0,
-        bonus: 0.0,
-        overtime: 0.0,
-        federalTax: 194.38,
-        stateTax: 103.75,
-        socialSecurity: 147.87,
-        medicare: 34.58,
-        otherDeductions: 26.75,
-        netPay: 1877.67,
-        pdfPath: "/paystubs/Employee_101_2026-04-10_example_paystub.pdf",
-      },
-      {
-        id: "PS-2026-03-27",
-        payDate: "2026-03-27",
-        periodStart: "2026-03-14",
-        periodEnd: "2026-03-27",
-        grossPay: 2310.0,
-        bonus: 0.0,
-        overtime: 0.0,
-        federalTax: 188.27,
-        stateTax: 100.49,
-        socialSecurity: 143.22,
-        medicare: 33.5,
-        otherDeductions: 22.5,
-        netPay: 1822.02,
-        pdfPath: "/paystubs/Employee_101_2026-03-27_example_paystub.pdf",
-      },
-      {
-        id: "PS-2026-03-13",
-        payDate: "2026-03-13",
-        periodStart: "2026-02-28",
-        periodEnd: "2026-03-13",
-        grossPay: 2360.0,
-        bonus: 40.0,
-        overtime: 0.0,
-        federalTax: 196.11,
-        stateTax: 102.64,
-        socialSecurity: 148.8,
-        medicare: 34.8,
-        otherDeductions: 24.1,
-        netPay: 1893.55,
-        pdfPath: "/paystubs/Employee_101_2026-03-13_example_paystub.pdf",
-      },
-      {
-        id: "PS-2026-02-27",
-        payDate: "2026-02-27",
-        periodStart: "2026-01-29",
-        periodEnd: "2026-02-27",
-        grossPay: 5040.0,
-        bonus: 80.0,
-        overtime: 0.0,
-        federalTax: 418.52,
-        stateTax: 218.67,
-        socialSecurity: 317.44,
-        medicare: 74.22,
-        otherDeductions: 50.25,
-        netPay: 4040.9,
-        pdfPath: "/paystubs/Employee_101_2026-02-27_example_paystub.pdf",
-      },
-    ],
-  },
-};
-
-const DIRECT_DEPOSIT_DATA = {
-  terridh9: {
-    status: "Active",
-    bankName: "Bank of America",
-    accountType: "Checking",
-    routingMask: "Routing ending in 0026",
-    accountMask: "Account ending in 3581",
-    effectiveDate: "2026-03-10",
+    deposit: {
+      bankName: "Wells Fargo",
+      accountType: "Checking",
+      routingNumber: "111000025",
+      accountNumber: "987654321234",
+      lastUpdated: "2026-04-10",
+    },
   },
   georgequalls14: {
-    status: "Active",
-    bankName: "Wells Fargo",
-    accountType: "Checking",
-    routingMask: "Routing ending in 9110",
-    accountMask: "Account ending in 4412",
-    effectiveDate: "2026-01-02",
+    scheduleLabel: "Biweekly",
+    paystubs: [
+      {
+        id: "GEORGE-2026-04-10",
+        payDate: "2026-04-10",
+        periodStart: "2026-03-10",
+        periodEnd: "2026-04-10",
+        regularHours: 160,
+        hourlyRate: 26.25,
+        grossPay: 4200,
+        federalTax: 465,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        gaTax: 182.8,
+        deductions: 0,
+        bonus: 0,
+        netPay: 3230.9,
+        watermark: "",
+      },
+      {
+        id: "GEORGE-2026-04-24",
+        payDate: "2026-04-24",
+        periodStart: "2026-04-11",
+        periodEnd: "2026-04-24",
+        regularHours: 80,
+        hourlyRate: 52.5,
+        grossPay: 4200,
+        federalTax: 468,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        gaTax: 182.7,
+        deductions: 0,
+        bonus: 75,
+        netPay: 3303,
+        watermark: "",
+      },
+      {
+        id: "GEORGE-2026-05-08",
+        payDate: "2026-05-08",
+        periodStart: "2026-04-25",
+        periodEnd: "2026-05-08",
+        regularHours: 80,
+        hourlyRate: 52.5,
+        grossPay: 4200,
+        federalTax: 468,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        gaTax: 182.7,
+        deductions: 0,
+        bonus: 125,
+        netPay: 3353,
+        watermark: "",
+      },
+      {
+        id: "GEORGE-2026-05-22",
+        payDate: "2026-05-22",
+        periodStart: "2026-05-09",
+        periodEnd: "2026-05-22",
+        regularHours: 80,
+        hourlyRate: 52.5,
+        grossPay: 4200,
+        federalTax: 468,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        gaTax: 182.7,
+        deductions: 0,
+        bonus: 200,
+        netPay: 3428,
+        watermark: "",
+      },
+      {
+        id: "GEORGE-2026-06-05",
+        payDate: "2026-06-05",
+        periodStart: "2026-05-23",
+        periodEnd: "2026-06-05",
+        regularHours: 80,
+        hourlyRate: 52.5,
+        grossPay: 4200,
+        federalTax: 468,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        gaTax: 182.7,
+        deductions: 0,
+        bonus: 300,
+        netPay: 3528,
+        watermark: "",
+      },
+      {
+        id: "GEORGE-2026-06-19",
+        payDate: "2026-06-19",
+        periodStart: "2026-06-06",
+        periodEnd: "2026-06-19",
+        regularHours: 80,
+        hourlyRate: 52.5,
+        grossPay: 4200,
+        federalTax: 468,
+        socialSecurity: 260.4,
+        medicare: 60.9,
+        gaTax: 182.7,
+        deductions: 0,
+        bonus: 400,
+        netPay: 3628,
+        watermark: "",
+      },
+    ],
+    deposit: {
+      bankName: "Bank of America",
+      accountType: "Checking",
+      routingNumber: "061000052",
+      accountNumber: "254100778921",
+      lastUpdated: "2026-04-10",
+    },
   },
   emp101: {
-    status: "Not enrolled",
-    bankName: "None on file",
-    accountType: "Paper check",
-    routingMask: "No routing number on file",
-    accountMask: "No direct deposit account on file",
-    effectiveDate: "2026-04-10",
+    scheduleLabel: "Biweekly",
+    paystubs: [
+      {
+        id: "EMP101-2026-04-10",
+        payDate: "2026-04-10",
+        periodStart: "2026-03-10",
+        periodEnd: "2026-04-10",
+        regularHours: 160,
+        hourlyRate: 21.5,
+        grossPay: 3440,
+        federalTax: 344,
+        socialSecurity: 213.28,
+        medicare: 50.88,
+        gaTax: 144.2,
+        deductions: 0,
+        bonus: 0,
+        netPay: 2687.64,
+        watermark: "THIS IS JUST AN EXAMPLE",
+      },
+      {
+        id: "EMP101-2026-04-24",
+        payDate: "2026-04-24",
+        periodStart: "2026-04-11",
+        periodEnd: "2026-04-24",
+        regularHours: 80,
+        hourlyRate: 43,
+        grossPay: 3440,
+        federalTax: 344,
+        socialSecurity: 213.28,
+        medicare: 50.88,
+        gaTax: 144.2,
+        deductions: 0,
+        bonus: 0,
+        netPay: 2687.64,
+        watermark: "THIS IS JUST AN EXAMPLE",
+      },
+    ],
+    deposit: {
+      bankName: "Chase",
+      accountType: "Savings",
+      routingNumber: "021000021",
+      accountNumber: "730012451100",
+      lastUpdated: "2026-04-10",
+    },
   },
 };
 
-const W2_DATA = {
-  terridh9: [],
-  georgequalls14: [],
-  emp101: [],
-};
+function buildFutureTerriStubs(existingPaystubs) {
+  const newest = existingPaystubs[existingPaystubs.length - 1];
+  const future = [];
+  let periodStart = new Date("2026-04-11T12:00:00");
+  let payDate = new Date("2026-04-24T12:00:00");
 
-const TRACKING_DATA = {
-  terridh9: [
-    {
-      id: "LGT2404017781",
-      date: "2026-04-01",
-      destination: "Charlotte, NC",
-      status: "Delivered",
-      recipient: "Terrianna Howard",
-    },
-    {
-      id: "LGT2404058827",
-      date: "2026-04-05",
-      destination: "Jacksonville, FL",
-      status: "In Transit",
-      recipient: "Terrianna Howard",
-    },
-    {
-      id: "LGT2404092055",
-      date: "2026-04-09",
-      destination: "Memphis, TN",
-      status: "Processing",
-      recipient: "Terrianna Howard",
-    },
-  ],
-  georgequalls14: [
-    {
-      id: "LGT2404026601",
-      date: "2026-04-02",
-      destination: "Charlotte, NC",
-      status: "Delivered",
-      recipient: "George Qualls",
-    },
-    {
-      id: "LGT2404121184",
-      date: "2026-04-12",
-      destination: "Memphis, TN",
-      status: "Processing",
-      recipient: "George Qualls",
-    },
-    {
-      id: "LGT2404297108",
-      date: "2026-04-29",
-      destination: "Houston, TX",
-      status: "In Transit",
-      recipient: "George Qualls",
-    },
-  ],
-  emp101: [
-    {
-      id: "LGT2404019001",
-      date: "2026-04-01",
-      destination: "Charlotte, NC",
-      status: "Delivered",
-      recipient: "Employee 101",
-    },
-    {
-      id: "LGT2404113377",
-      date: "2026-04-11",
-      destination: "Memphis, TN",
-      status: "Processing",
-      recipient: "Employee 101",
-    },
-    {
-      id: "LGT2404289943",
-      date: "2026-04-28",
-      destination: "Houston, TX",
-      status: "In Transit",
-      recipient: "Employee 101",
-    },
-  ],
-};
+  for (let i = 0; i < 4; i += 1) {
+    const periodEnd = new Date(payDate);
+    future.push({
+      ...newest,
+      id: `TERRI-FUTURE-${i + 1}`,
+      payDate: payDate.toISOString().slice(0, 10),
+      periodStart: periodStart.toISOString().slice(0, 10),
+      periodEnd: periodEnd.toISOString().slice(0, 10),
+    });
+    periodStart = new Date(periodEnd);
+    periodStart.setDate(periodStart.getDate() + 1);
+    payDate = new Date(payDate);
+    payDate.setDate(payDate.getDate() + 14);
+  }
 
-function parseLocalDate(dateString) {
-  const [year, month, day] = dateString.split("-").map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0);
+  return future;
 }
 
-function formatDate(dateString) {
-  if (!dateString) return "Not available";
+function getEmployeeData(username) {
+  const safeUsername = String(username || "").toLowerCase();
+  const base = PAY_DATA[safeUsername];
+  const directory = EMPLOYEE_DIRECTORY_FALLBACK[safeUsername];
 
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(parseLocalDate(dateString));
-}
+  if (!base || !directory) return null;
 
-function formatCurrency(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value || 0);
-}
+  const paystubs =
+    safeUsername === "terridh9"
+      ? [...base.paystubs, ...buildFutureTerriStubs(base.paystubs)].map((stub, index) => ({
+          ...stub,
+          hiddenFromHistory: index > 0,
+        }))
+      : base.paystubs.map((stub) => ({ ...stub, hiddenFromHistory: false }));
 
-function digitsOnly(value) {
-  return String(value || "").replace(/\D/g, "");
-}
-
-function maskRoutingNumber(value) {
-  const digits = digitsOnly(value);
-  if (!digits) return "";
-
-  const visible = digits.slice(-4);
-  return `Routing ending in ${visible}`;
-}
-
-function maskAccountNumber(value) {
-  const digits = digitsOnly(value);
-  if (!digits) return "";
-
-  const visible = digits.slice(-4);
-  return `Account ending in ${visible}`;
-}
-
-function todayIsoDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function mapDirectoryEmployee(row) {
   return {
-    username: row.username,
-    name: row.full_name || row.username,
-    employeeId: row.employee_id || "",
-    department: row.department || "",
-    position: row.position || "",
-    location: row.location || "",
-    email: row.auth_email || "",
-    phone: "",
-    address: "",
+    ...directory,
+    ...base,
+    paystubs,
+    tracking: createTrackingItems(directory.full_name),
   };
 }
 
-function downloadPaystub(stub) {
-  if (!stub.pdfPath) {
-    alert("No uploaded PDF is attached to this paystub yet.");
-    return;
-  }
-
-  const link = document.createElement("a");
-  link.href = stub.pdfPath;
-  link.download = stub.pdfPath.split("/").pop();
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-function printPaystubFromFile(stub) {
-  if (!stub.pdfPath) {
-    alert("No uploaded PDF is attached to this paystub yet.");
-    return;
-  }
-
-  const printWindow = window.open(stub.pdfPath, "_blank");
-  if (printWindow) {
-    printWindow.onload = () => {
-      try {
-        printWindow.print();
-      } catch (error) {
-        console.error(error);
-      }
-    };
-  }
-}
-
-function Footer() {
+function LoginScreen({
+  loginForm,
+  setLoginForm,
+  onLogin,
+  loginLoading,
+  loginError,
+  showPassword,
+  setShowPassword,
+  goToForgot,
+}) {
   return (
-    <div className="text-center text-sm text-slate-500 py-8">
-      © 2020 to 2026 Logistive LLC
+    <div className="min-h-screen bg-slate-100 px-4 py-10">
+      <div className="mx-auto flex min-h-[85vh] max-w-6xl items-center justify-center">
+        <div className="grid w-full overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[1.08fr_0.92fr]">
+          <div className="hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-10 text-white lg:block">
+            <div className="flex h-full flex-col justify-between">
+              <div>
+                <div className="mb-10 flex items-center gap-4">
+                  <div className="rounded-2xl bg-white/10 p-3 backdrop-blur">
+                    <img src={LOGO_URL} alt="Logistive LLC" className="h-28 w-28 object-contain" />
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.25em] text-slate-300">Logistive LLC</p>
+                    <h1 className="text-3xl font-semibold">Employee Portal</h1>
+                  </div>
+                </div>
+
+                <h2 className="max-w-lg text-4xl font-semibold leading-tight">
+                  Secure payroll, profile, and shipment access in one employee workspace.
+                </h2>
+                <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
+                  Sign in to view your pay history, update your direct deposit details,
+                  review shipments, and manage your employee profile.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                {[
+                  { icon: Shield, label: "Protected Access" },
+                  { icon: CreditCard, label: "Payroll Details" },
+                  { icon: Truck, label: "Shipment Tracking" },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <Icon className="mb-3 h-5 w-5" />
+                    <p className="text-sm text-slate-200">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-10 lg:p-12">
+            <div className="mx-auto max-w-md">
+              <div className="mb-8 flex items-center gap-3 lg:hidden">
+                <img src={LOGO_URL} alt="Logistive LLC" className="h-20 w-20 object-contain" />
+                <div>
+                  <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Logistive LLC</p>
+                  <h1 className="text-2xl font-semibold text-slate-900">Employee Portal</h1>
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h2 className="text-3xl font-semibold text-slate-900">Sign in</h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  Use your employee username and password to continue.
+                </p>
+              </div>
+
+              <form onSubmit={onLogin} className="space-y-5">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Username</label>
+                  <input
+                    type="text"
+                    value={loginForm.username}
+                    onChange={(e) =>
+                      setLoginForm((prev) => ({ ...prev, username: e.target.value.toLowerCase() }))
+                    }
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-slate-400"
+                    placeholder="Enter username"
+                    autoComplete="username"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={loginForm.password}
+                      onChange={(e) =>
+                        setLoginForm((prev) => ({ ...prev, password: e.target.value }))
+                      }
+                      className="w-full rounded-2xl border border-slate-200 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-slate-400"
+                      placeholder="Enter password"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {loginError ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {loginError}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {loginLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                  {loginLoading ? "Signing in..." : "Sign in"}
+                </button>
+              </form>
+
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <button onClick={goToForgot} className="text-slate-600 transition hover:text-slate-900">
+                  Forgot password?
+                </button>
+                <span className="text-slate-400">Secure employee access</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function Sidebar({ page, setPage, logout }) {
+function ForgotPasswordScreen({ forgotEmail, setForgotEmail, onSubmit, loading, message, error, onBack }) {
+  return (
+    <div className="min-h-screen bg-slate-100 px-4 py-10">
+      <div className="mx-auto flex min-h-[85vh] max-w-2xl items-center justify-center">
+        <div className="w-full rounded-3xl bg-white p-8 shadow-2xl sm:p-10">
+          <button
+            onClick={onBack}
+            className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-slate-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to sign in
+          </button>
+
+          <div className="mb-8 flex items-center gap-4">
+            <div className="rounded-2xl bg-slate-100 p-3">
+              <Lock className="h-6 w-6 text-slate-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">Forgot password</h2>
+              <p className="text-sm text-slate-500">
+                Enter your employee email to receive a reset link.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-5">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Employee email</label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                placeholder="name@mylogistive.com"
+                autoComplete="email"
+              />
+            </div>
+
+            {message ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {message}
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {error}
+              </div>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-70"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5" />}
+              {loading ? "Sending reset link..." : "Send reset link"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResetPasswordScreen({
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  onSubmit,
+  loading,
+  message,
+  error,
+  onBack,
+}) {
+  return (
+    <div className="min-h-screen bg-slate-100 px-4 py-10">
+      <div className="mx-auto flex min-h-[85vh] max-w-2xl items-center justify-center">
+        <div className="w-full rounded-3xl bg-white p-8 shadow-2xl sm:p-10">
+          <button
+            onClick={onBack}
+            className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-slate-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to sign in
+          </button>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold text-slate-900">Create new password</h2>
+            <p className="mt-2 text-sm text-slate-500">
+              This page works with Supabase recovery links. Open the link from your email,
+              then set your new password here.
+            </p>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-5">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">New password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                placeholder="Enter new password"
+                autoComplete="new-password"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Confirm password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+              />
+            </div>
+
+            {message ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {message}
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {error}
+              </div>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-70"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+              {loading ? "Updating password..." : "Update password"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({ activeTab, setActiveTab, employeeName, onLogout, isAdmin }) {
   const items = [
     { key: "dashboard", label: "Dashboard", icon: LayoutGrid },
-    { key: "pay", label: "Pay", icon: FileText },
-    { key: "deposit", label: "Direct Deposit", icon: Landmark },
-    { key: "taxes", label: "W2 Forms", icon: BadgeDollarSign },
+    { key: "pay", label: "Pay", icon: CreditCard },
     { key: "tracking", label: "Tracking", icon: Truck },
     { key: "profile", label: "Profile", icon: User },
-    { key: "help", label: "Help", icon: HelpCircle },
+    { key: "support", label: "Support", icon: HelpCircle },
   ];
 
+  if (isAdmin) {
+    items.push({ key: "admin", label: "Admin", icon: Shield });
+  }
+
   return (
-    <div className="w-full md:w-72 bg-slate-950 text-white rounded-[28px] p-5 shadow-2xl border border-slate-800">
-      <div className="flex items-center gap-3 mb-8">
-        <img src={COMPANY.logo} alt="Company logo" className="h-14 w-auto" />
+    <aside className="flex w-full flex-col rounded-3xl bg-slate-900 p-5 text-white lg:w-72">
+      <div className="mb-8 flex items-center gap-3">
+        <div className="rounded-2xl bg-white/10 p-2.5">
+          <img src={LOGO_URL} alt="Logistive LLC" className="h-10 w-10 object-contain" />
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Logistive LLC</p>
+          <h2 className="text-lg font-semibold">Employee Portal</h2>
+        </div>
       </div>
 
-      <div className="text-xs uppercase tracking-[0.25em] text-slate-400 mb-3">
-        Workspace
+      <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Signed in as</p>
+        <p className="mt-2 font-medium text-white">{employeeName}</p>
       </div>
 
-      <div className="space-y-2">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const active = page === item.key;
-
+      <nav className="space-y-2">
+        {items.map(({ key, label, icon: Icon }) => {
+          const isActive = activeTab === key;
           return (
             <button
-              key={item.key}
-              onClick={() => setPage(item.key)}
-              className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
-                active
-                  ? "bg-white text-slate-950 shadow-lg"
-                  : "text-slate-200 hover:bg-slate-900"
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
+                isActive ? "bg-white text-slate-900" : "text-slate-200 hover:bg-white/10"
               }`}
             >
               <Icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium">{label}</span>
             </button>
           );
         })}
-      </div>
+      </nav>
 
-      <button
-        onClick={logout}
-        className="mt-8 w-full rounded-2xl bg-slate-800 border border-slate-700 px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3"
-      >
-        <LogOut className="h-5 w-5" />
-        <span>Log out</span>
-      </button>
-    </div>
+      <div className="mt-auto pt-6">
+        <button
+          onClick={onLogout}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
+        <p className="mt-4 text-center text-xs text-slate-400">© 2020–2026 Logistive LLC</p>
+      </div>
+    </aside>
   );
 }
 
-function Topbar({ employee }) {
-  return (
-    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-      <div>
-        <div className="text-sm text-slate-500">
-          {COMPANY.employeePortalTitle} • {COMPANY.buildTag}
-        </div>
-        <h1 className="text-3xl font-bold text-slate-950">
-          Welcome back, {employee.name?.split(" ")[0] || "Employee"}
-        </h1>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm">
-        <div className="text-xs text-slate-500">Employee ID</div>
-        <div className="font-semibold text-slate-950">{employee.employeeId}</div>
-      </div>
-    </div>
-  );
-}
-
-function DashboardPage({ employee }) {
-  const payInfo = PAY_DATA[employee.username.toLowerCase()];
-  const latestStub = payInfo?.paystubs?.[0];
+function DashboardTab({ employee, onViewPay }) {
+  const visiblePaystubs = employee.paystubs.filter((stub) => !stub.hiddenFromHistory);
+  const latestVisible = visiblePaystubs[visiblePaystubs.length - 1];
+  const currentIndex = getCurrentPeriodIndex(employee.paystubs);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200">
-          <div className="text-sm text-slate-500">Next pay date</div>
-          <div className="text-3xl font-bold text-slate-950 mt-2">
-            {payInfo ? formatDate(payInfo.nextPayDate) : "Not available"}
+      <div className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Welcome back</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">{employee.full_name}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+              Review your payroll activity, shipment updates, and employee details from your portal dashboard.
+            </p>
           </div>
-          <div className="text-sm text-slate-500 mt-2">
-            {payInfo?.paySchedule || "No schedule on file"}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200">
-          <div className="text-sm text-slate-500">Last net pay</div>
-          <div className="text-3xl font-bold text-slate-950 mt-2">
-            {latestStub ? formatCurrency(latestStub.netPay) : "Not available"}
-          </div>
-          <div className="text-sm text-slate-500 mt-2">
-            {latestStub ? `Paid on ${formatDate(latestStub.payDate)}` : "No paystub available"}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-200">
-          <div className="text-sm text-slate-500">Payment method</div>
-          <div className="text-3xl font-bold text-slate-950 mt-2">
-            {payInfo?.payMethod || "Not available"}
-          </div>
-          <div className="text-sm text-slate-500 mt-2">
-            {payInfo?.accountMask || "No payment account on file"}
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Current pay period</p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">
+              {formatPayRange(
+                employee.paystubs[currentIndex]?.periodStart,
+                employee.paystubs[currentIndex]?.periodEnd
+              )}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">Schedule: {employee.scheduleLabel}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 2xl:grid-cols-[1.5fr_1fr] gap-6">
-        <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-          <div className="text-sm text-slate-500">Payroll overview</div>
-          <h2 className="text-2xl font-bold text-slate-950 mt-1">Current pay summary</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
-              <div className="text-sm text-slate-500">Gross pay</div>
-              <div className="text-2xl font-bold text-slate-950 mt-2">
-                {latestStub ? formatCurrency(latestStub.grossPay) : "$0.00"}
-              </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          {
+            label: "Latest Net Pay",
+            value: formatMoney(latestVisible?.netPay || 0),
+            icon: CreditCard,
+          },
+          {
+            label: "Next Pay Date",
+            value: formatShortDate(employee.paystubs[Math.min(currentIndex + 1, employee.paystubs.length - 1)]?.payDate),
+            icon: CalendarDays,
+          },
+          {
+            label: "Position",
+            value: employee.position,
+            icon: Building2,
+          },
+          {
+            label: "Employee ID",
+            value: employee.employee_id,
+            icon: FileText,
+          },
+        ].map(({ label, value, icon: Icon }) => (
+          <div key={label} className="rounded-3xl bg-white p-5 shadow-sm">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100">
+              <Icon className="h-5 w-5 text-slate-700" />
             </div>
+            <p className="text-sm text-slate-500">{label}</p>
+            <p className="mt-2 text-xl font-semibold text-slate-900">{value}</p>
+          </div>
+        ))}
+      </div>
 
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-5">
-              <div className="text-sm text-emerald-700">Net pay</div>
-              <div className="text-2xl font-bold text-emerald-900 mt-2">
-                {latestStub ? formatCurrency(latestStub.netPay) : "$0.00"}
-              </div>
+      <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Recent pay activity</h2>
+              <p className="mt-1 text-sm text-slate-500">Most recent available pay history in your account.</p>
             </div>
+            <button
+              onClick={onViewPay}
+              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400"
+            >
+              Open pay tab
+            </button>
+          </div>
 
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5">
-              <div className="text-sm text-amber-700">Bonus</div>
-              <div className="text-2xl font-bold text-amber-900 mt-2">
-                {latestStub ? formatCurrency(latestStub.bonus || 0) : "$0.00"}
+          <div className="mt-5 space-y-4">
+            {visiblePaystubs.slice().reverse().map((stub) => (
+              <div key={stub.id} className="rounded-2xl border border-slate-200 p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Pay date</p>
+                    <p className="text-base font-semibold text-slate-900">{formatShortDate(stub.payDate)}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {formatPayRange(stub.periodStart, stub.periodEnd)}
+                    </p>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <p className="text-sm text-slate-500">Net pay</p>
+                    <p className="text-xl font-semibold text-slate-900">{formatMoney(stub.netPay)}</p>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-          <div className="text-sm text-slate-500">Employee record</div>
-          <div className="mt-4 space-y-3 text-sm text-slate-700">
-            <div className="flex justify-between gap-4">
-              <span>Department</span>
-              <span className="font-semibold text-slate-950">{employee.department}</span>
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Direct deposit summary</h2>
+          <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div>
+              <p className="text-sm text-slate-500">Bank</p>
+              <p className="font-medium text-slate-900">{employee.deposit.bankName}</p>
             </div>
-            <div className="flex justify-between gap-4">
-              <span>Position</span>
-              <span className="font-semibold text-slate-950">{employee.position}</span>
+            <div>
+              <p className="text-sm text-slate-500">Routing</p>
+              <p className="font-medium text-slate-900">{maskRoutingNumber(employee.deposit.routingNumber)}</p>
             </div>
-            <div className="flex justify-between gap-4">
-              <span>Location</span>
-              <span className="font-semibold text-slate-950">{employee.location}</span>
+            <div>
+              <p className="text-sm text-slate-500">Account</p>
+              <p className="font-medium text-slate-900">{maskAccountNumber(employee.deposit.accountNumber)}</p>
             </div>
-            <div className="flex justify-between gap-4">
-              <span>Status</span>
-              <span className="font-semibold text-emerald-700">Active</span>
+            <div>
+              <p className="text-sm text-slate-500">Last updated</p>
+              <p className="font-medium text-slate-900">{formatShortDate(employee.deposit.lastUpdated)}</p>
             </div>
           </div>
         </div>
@@ -624,1407 +914,1154 @@ function DashboardPage({ employee }) {
   );
 }
 
-function PayPage({ employee }) {
-  const employeeKey = employee.username.toLowerCase();
-  const payInfo = PAY_DATA[employeeKey];
-  const paystubs = payInfo?.paystubs || [];
-  const [selectedStubId, setSelectedStubId] = useState(paystubs[0]?.id || null);
-  const selectedStub =
-    paystubs.find((stub) => stub.id === selectedStubId) || paystubs[0] || null;
+function PaystubModal({ stub, employee, onClose, onDownload }) {
+  if (!stub) return null;
 
-  if (!payInfo || !selectedStub) {
-    return (
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-        No pay data found.
-      </div>
-    );
-  }
-
-  const totalDeductions =
-    selectedStub.federalTax +
-    selectedStub.stateTax +
-    selectedStub.socialSecurity +
-    selectedStub.medicare +
-    selectedStub.otherDeductions;
+  const totalTaxes = stub.federalTax + stub.socialSecurity + stub.medicare + stub.gaTax;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[0.95fr_1.35fr] gap-6">
-      <div className="space-y-6">
-        <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-          <div className="text-sm text-slate-500">Payment profile</div>
-          <div className="text-2xl font-bold text-slate-950 mt-1">{employee.name}</div>
-
-          <div className="grid grid-cols-1 gap-4 mt-5">
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 flex items-start gap-3">
-              <CreditCard className="h-5 w-5 text-slate-700 mt-1" />
-              <div>
-                <div className="text-sm text-slate-500">Payment method</div>
-                <div className="font-semibold text-slate-950">{payInfo.payMethod}</div>
-                <div className="text-sm text-slate-600 mt-1">{payInfo.accountMask}</div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 flex items-start gap-3">
-              <CalendarDays className="h-5 w-5 text-slate-700 mt-1" />
-              <div>
-                <div className="text-sm text-slate-500">Pay schedule</div>
-                <div className="font-semibold text-slate-950">{payInfo.paySchedule}</div>
-                <div className="text-sm text-slate-600 mt-1">
-                  Next pay date: {formatDate(payInfo.nextPayDate)}
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 flex items-start gap-3">
-              <CircleDollarSign className="h-5 w-5 text-slate-700 mt-1" />
-              <div>
-                <div className="text-sm text-slate-500">Selected statement</div>
-                <div className="font-semibold text-slate-950">{formatDate(selectedStub.payDate)}</div>
-                <div className="text-sm text-slate-600 mt-1">
-                  Bonus included: {formatCurrency(selectedStub.bonus || 0)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-          <div className="text-sm text-slate-500">Available statements</div>
-          <h2 className="text-2xl font-bold text-slate-950 mt-1">Paystub cards</h2>
-
-          <div className="space-y-3 mt-5">
-            {paystubs.map((stub) => (
-              <button
-                key={stub.id}
-                onClick={() => setSelectedStubId(stub.id)}
-                className={`w-full text-left rounded-2xl border p-4 transition ${
-                  selectedStub.id === stub.id
-                    ? "border-slate-950 bg-slate-950 text-white"
-                    : "border-slate-200 bg-white hover:bg-slate-50"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="font-semibold">{formatDate(stub.payDate)}</div>
-                    <div
-                      className={`text-sm mt-1 ${
-                        selectedStub.id === stub.id ? "text-slate-300" : "text-slate-500"
-                      }`}
-                    >
-                      {formatDate(stub.periodStart)} to {formatDate(stub.periodEnd)}
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="font-semibold">{formatCurrency(stub.netPay)}</div>
-                    <div
-                      className={`text-sm mt-1 ${
-                        selectedStub.id === stub.id ? "text-slate-300" : "text-slate-500"
-                      }`}
-                    >
-                      Net pay
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="min-w-0 bg-white rounded-[28px] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-slate-950 text-white p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+        <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
           <div>
-            <div className="text-sm text-slate-300">{COMPANY.name}</div>
-            <div className="text-2xl font-bold mt-1">Earnings Statement</div>
-            <div className="text-sm text-slate-300 mt-2">
-              Pay date {formatDate(selectedStub.payDate)}
+            <h3 className="text-xl font-semibold text-slate-900">Paystub detail</h3>
+            <p className="text-sm text-slate-500">{employee.full_name} • {formatShortDate(stub.payDate)}</p>
+          </div>
+          <button onClick={onClose} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm text-slate-700">
+            Close
+          </button>
+        </div>
+
+        <div className="p-6 sm:p-8">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+            <div className="flex flex-col gap-6 border-b border-slate-200 pb-6 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Employer</p>
+                <h4 className="mt-2 text-2xl font-semibold text-slate-900">Logistive LLC</h4>
+                <p className="mt-1 text-sm text-slate-500">Payroll Statement</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 md:min-w-[360px]">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Employee</p>
+                  <p className="mt-1 font-medium text-slate-900">{employee.full_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Employee ID</p>
+                  <p className="mt-1 font-medium text-slate-900">{employee.employee_id}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Pay period</p>
+                  <p className="mt-1 font-medium text-slate-900">{formatPayRange(stub.periodStart, stub.periodEnd)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Pay date</p>
+                  <p className="mt-1 font-medium text-slate-900">{formatShortDate(stub.payDate)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              <div className="rounded-2xl bg-white p-5">
+                <h5 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">Earnings</h5>
+                <div className="mt-4 space-y-3">
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Regular Hours</span>
+                    <span>{stub.regularHours}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Rate</span>
+                    <span>{formatMoney(stub.hourlyRate)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Bonus</span>
+                    <span>{formatMoney(stub.bonus)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold text-slate-900">
+                    <span>Gross Pay</span>
+                    <span>{formatMoney(stub.grossPay + stub.bonus)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5">
+                <h5 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">Taxes</h5>
+                <div className="mt-4 space-y-3">
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Federal</span>
+                    <span>{formatMoney(stub.federalTax)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Social Security</span>
+                    <span>{formatMoney(stub.socialSecurity)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Medicare</span>
+                    <span>{formatMoney(stub.medicare)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Georgia Tax</span>
+                    <span>{formatMoney(stub.gaTax)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold text-slate-900">
+                    <span>Total Taxes</span>
+                    <span>{formatMoney(totalTaxes)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5">
+                <h5 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">Deposit</h5>
+                <div className="mt-4 space-y-3">
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Bank</span>
+                    <span>{employee.deposit.bankName}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Account Type</span>
+                    <span>{employee.deposit.accountType}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Routing</span>
+                    <span>{maskRoutingNumber(employee.deposit.routingNumber)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Account</span>
+                    <span>{maskAccountNumber(employee.deposit.accountNumber)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900">
+                    <span>Net Pay</span>
+                    <span>{formatMoney(stub.netPay)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-3">
             <button
-              onClick={() => downloadPaystub(selectedStub)}
-              className="bg-white text-slate-950 px-4 py-3 rounded-2xl font-medium flex items-center gap-2"
+              onClick={() => onDownload(stub)}
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
             >
               <Download className="h-4 w-4" />
               Download PDF
             </button>
-
             <button
-              onClick={() => printPaystubFromFile(selectedStub)}
-              className="bg-slate-800 text-white px-4 py-3 rounded-2xl font-medium flex items-center gap-2 border border-slate-700"
+              onClick={() => {
+                onDownload(stub);
+                setTimeout(() => window.print(), 200);
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400"
             >
               <Printer className="h-4 w-4" />
               Print
             </button>
           </div>
         </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 mb-6">
-            <div className="min-w-0 rounded-2xl border border-slate-200 p-5">
-              <div className="text-sm text-slate-500">Gross pay</div>
-              <div className="text-2xl xl:text-3xl font-bold text-slate-950 mt-2 leading-tight break-words">
-                {formatCurrency(selectedStub.grossPay)}
-              </div>
-            </div>
-
-            <div className="min-w-0 rounded-2xl border border-slate-200 p-5">
-              <div className="text-sm text-slate-500">Bonus</div>
-              <div className="text-2xl xl:text-3xl font-bold text-slate-950 mt-2 leading-tight break-words">
-                {formatCurrency(selectedStub.bonus || 0)}
-              </div>
-            </div>
-
-            <div className="min-w-0 rounded-2xl border border-slate-200 p-5">
-              <div className="text-sm text-slate-500">Taxes and deductions</div>
-              <div className="text-2xl xl:text-3xl font-bold text-slate-950 mt-2 leading-tight break-words">
-                {formatCurrency(totalDeductions)}
-              </div>
-            </div>
-
-            <div className="min-w-0 rounded-2xl bg-emerald-50 border border-emerald-200 p-5">
-              <div className="text-sm text-emerald-700">Net pay</div>
-              <div className="text-2xl xl:text-3xl font-bold text-emerald-900 mt-2 leading-tight break-words">
-                {formatCurrency(selectedStub.netPay)}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
-              <div className="text-sm text-slate-500 mb-3">Employee information</div>
-              <div className="space-y-2 text-sm text-slate-700">
-                <div><span className="font-semibold text-slate-950">Name:</span> {employee.name}</div>
-                <div><span className="font-semibold text-slate-950">Employee ID:</span> {employee.employeeId}</div>
-                <div><span className="font-semibold text-slate-950">Department:</span> {employee.department}</div>
-                <div><span className="font-semibold text-slate-950">Position:</span> {employee.position}</div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
-              <div className="text-sm text-slate-500 mb-3">Statement details</div>
-              <div className="space-y-2 text-sm text-slate-700">
-                <div><span className="font-semibold text-slate-950">Pay date:</span> {formatDate(selectedStub.payDate)}</div>
-                <div><span className="font-semibold text-slate-950">Pay period:</span> {formatDate(selectedStub.periodStart)} to {formatDate(selectedStub.periodEnd)}</div>
-                <div><span className="font-semibold text-slate-950">Payment method:</span> {payInfo.payMethod}</div>
-                <div><span className="font-semibold text-slate-950">Delivery:</span> {payInfo.accountMask}</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
 }
 
-function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
-  const [formData, setFormData] = useState(() =>
-    depositInfo || {
-      status: "Not enrolled",
-      bankName: "",
-      accountType: "Checking",
-      routingMask: "",
-      accountMask: "",
-      routingNumber: "",
-      accountNumber: "",
-      effectiveDate: "",
-    }
-  );
-  const [savedMessage, setSavedMessage] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setSavedMessage("");
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSavedMessage("");
-
-    const result = await onSaveDeposit(formData);
-
-    setSaving(false);
-
-    if (result?.success) {
-      setFormData((prev) => ({
-        ...prev,
-        routingMask: result.routingMask || prev.routingMask || "",
-        accountMask: result.accountMask || prev.accountMask || "",
-        routingNumber: "",
-        accountNumber: "",
-        effectiveDate: result.effectiveDate || prev.effectiveDate || "",
-      }));
-      setSavedMessage(result.message || "Direct deposit saved.");
-    } else {
-      setSavedMessage(result?.message || "Unable to update direct deposit.");
-    }
-  };
+function PayTab({ employee, depositForm, setDepositForm, onSaveDeposit, depositSaving, depositMessage, depositError, onViewStub, onDownloadStub }) {
+  const visiblePaystubs = employee.paystubs.filter((stub) => !stub.hiddenFromHistory);
+  const currentPeriodIndex = getCurrentPeriodIndex(employee.paystubs);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[0.9fr_1.3fr] gap-6">
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-        <div className="text-sm text-slate-500">Payment elections</div>
-        <h2 className="text-2xl font-bold text-slate-950 mt-1">Direct deposit</h2>
-        <div className="text-sm text-slate-500 mt-1">
-          Review and update your payroll deposit setup.
-        </div>
-
-        <div className="mt-5 space-y-3">
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-            <div className="text-sm text-slate-500">Deposit status</div>
-            <div className="font-semibold text-slate-950 mt-1">{formData?.status || "Not enrolled"}</div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-            <div className="text-sm text-slate-500">Employee</div>
-            <div className="font-semibold text-slate-950 mt-1">{employee.name}</div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-            <div className="text-sm text-slate-500">Effective date</div>
-            <div className="font-semibold text-slate-950 mt-1">
-              {formData?.effectiveDate ? formatDate(formData.effectiveDate) : "Not set"}
+    <div className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">Pay</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Paystubs, pay schedule, and downloadable payroll statements.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
+              {employee.scheduleLabel}
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-            <div className="text-sm text-slate-500">Stored routing number</div>
-            <div className="font-semibold text-slate-950 mt-1">
-              {formData?.routingMask || "No routing number on file"}
-            </div>
-          </div>
+          <div className="mt-6 space-y-4">
+            {visiblePaystubs.slice().reverse().map((stub) => (
+              <div key={stub.id} className="rounded-3xl border border-slate-200 p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Pay date</p>
+                    <p className="text-lg font-semibold text-slate-900">{formatShortDate(stub.payDate)}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {formatPayRange(stub.periodStart, stub.periodEnd)}
+                    </p>
+                  </div>
+                  <div className="grid gap-2 text-left lg:text-right">
+                    <div>
+                      <p className="text-sm text-slate-500">Gross pay</p>
+                      <p className="font-semibold text-slate-900">{formatMoney(stub.grossPay + stub.bonus)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Net pay</p>
+                      <p className="text-xl font-semibold text-slate-900">{formatMoney(stub.netPay)}</p>
+                    </div>
+                  </div>
+                </div>
 
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-            <div className="text-sm text-slate-500">Stored account number</div>
-            <div className="font-semibold text-slate-950 mt-1">
-              {formData?.accountMask || "No account number on file"}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-        <div className="text-sm text-slate-500">Deposit details</div>
-        <h2 className="text-2xl font-bold text-slate-950 mt-1">Banking information</h2>
-
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Enter your full bank details below. When you save, only masked versions are stored and only the last 4 digits remain visible in the portal.
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          <div>
-            <label className="text-sm font-medium text-slate-700">Status</label>
-            <select
-              value={formData?.status || "Not enrolled"}
-              onChange={(e) => handleChange("status", e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-            >
-              <option value="Active">Active</option>
-              <option value="Pending">Pending</option>
-              <option value="Not enrolled">Not enrolled</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">Bank name</label>
-            <input
-              value={formData?.bankName || ""}
-              onChange={(e) => handleChange("bankName", e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-              placeholder="Bank name"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">Account type</label>
-            <select
-              value={formData?.accountType || "Checking"}
-              onChange={(e) => handleChange("accountType", e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-            >
-              <option value="Checking">Checking</option>
-              <option value="Savings">Savings</option>
-              <option value="Paper check">Paper check</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">Effective date</label>
-            <input
-              type="date"
-              value={formData?.effectiveDate || ""}
-              onChange={(e) => handleChange("effectiveDate", e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">Routing mask</label>
-            <input
-              value={formData?.routingMask || ""}
-              readOnly
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-              placeholder="Routing ending in 1234"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">Account mask</label>
-            <input
-              value={formData?.accountMask || ""}
-              readOnly
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-              placeholder="Account ending in 5678"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">Routing number</label>
-            <input
-              value={formData?.routingNumber || ""}
-              onChange={(e) => handleChange("routingNumber", e.target.value)}
-              inputMode="numeric"
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-              placeholder="Enter full routing number"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">Account number</label>
-            <input
-              value={formData?.accountNumber || ""}
-              onChange={(e) => handleChange("accountNumber", e.target.value)}
-              inputMode="numeric"
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-              placeholder="Enter full account number"
-            />
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-2xl bg-slate-950 text-white px-6 py-3 font-medium disabled:opacity-60"
-          >
-            {saving ? "Saving..." : "Save direct deposit"}
-          </button>
-
-          {savedMessage && (
-            <div
-              className={`text-sm ${
-                savedMessage.includes("successfully") ? "text-emerald-700" : "text-red-600"
-              }`}
-            >
-              {savedMessage}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TaxDocumentsPage({ employee }) {
-  const docs = W2_DATA[employee.username.toLowerCase()] || [];
-
-  return (
-    <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-8">
-      <div className="text-sm text-slate-500">Year end tax documents</div>
-      <h2 className="text-3xl font-bold text-slate-950 mt-1">W2 forms</h2>
-      <div className="text-sm text-slate-500 mt-2">
-        Download your available year end tax forms here.
-      </div>
-
-      {docs.length === 0 ? (
-        <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center">
-          <BadgeDollarSign className="h-10 w-10 mx-auto text-slate-400" />
-          <div className="text-xl font-semibold text-slate-950 mt-4">No W2 forms available yet</div>
-          <div className="text-sm text-slate-500 mt-2">
-            Tax documents will appear here after year end processing is complete.
-          </div>
-        </div>
-      ) : (
-        <div className="mt-8 space-y-3">
-          {docs.map((doc) => (
-            <div
-              key={doc.id}
-              className="rounded-2xl border border-slate-200 p-5 flex items-center justify-between gap-4"
-            >
-              <div>
-                <div className="font-semibold text-slate-950">{doc.label}</div>
-                <div className="text-sm text-slate-500 mt-1">{doc.year}</div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => onViewStub(stub)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+                  >
+                    <FileText className="h-4 w-4" />
+                    View Stub
+                  </button>
+                  <button
+                    onClick={() => onDownloadStub(stub)}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </button>
+                </div>
               </div>
-              <button className="rounded-2xl bg-slate-950 text-white px-4 py-3 font-medium">
-                Download
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TrackingPage({ employee }) {
-  const packages = TRACKING_DATA[employee.username.toLowerCase()] || [];
-  const [selectedPackageId, setSelectedPackageId] = useState(packages[0]?.id || null);
-  const selectedPackage =
-    packages.find((pkg) => pkg.id === selectedPackageId) || packages[0] || null;
-
-  return (
-    <div className="grid grid-cols-1 xl:grid-cols-[0.95fr_1.35fr] gap-6">
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-        <div className="text-sm text-slate-500">Shipment history</div>
-        <h2 className="text-2xl font-bold text-slate-950 mt-1">Tracking</h2>
-        <div className="text-sm text-slate-500 mt-1">
-          Select a package to view shipment details.
+            ))}
+          </div>
         </div>
 
-        <div className="space-y-3 mt-5">
-          {packages.map((pkg) => (
-            <button
-              key={pkg.id}
-              onClick={() => setSelectedPackageId(pkg.id)}
-              className={`w-full text-left rounded-2xl border p-4 transition ${
-                selectedPackage?.id === pkg.id
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-white hover:bg-slate-50"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold">{pkg.id}</div>
+        <div className="space-y-6">
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-slate-900">Pay schedule</h2>
+            <div className="mt-5 grid gap-3">
+              {employee.paystubs.map((stub, index) => {
+                const isActive = index === currentPeriodIndex;
+                return (
                   <div
-                    className={`text-sm mt-1 ${
-                      selectedPackage?.id === pkg.id ? "text-slate-300" : "text-slate-500"
+                    key={stub.id}
+                    className={`rounded-2xl border p-4 ${
+                      isActive ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-slate-50"
                     }`}
                   >
-                    {pkg.recipient}
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className={`text-sm ${isActive ? "text-slate-300" : "text-slate-500"}`}>Pay date</p>
+                        <p className="font-semibold">{formatShortDate(stub.payDate)}</p>
+                        <p className={`mt-1 text-sm ${isActive ? "text-slate-300" : "text-slate-500"}`}>
+                          {formatPayRange(stub.periodStart, stub.periodEnd)}
+                        </p>
+                      </div>
+                      {isActive ? (
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.22em]">
+                          Current
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                <div
-                  className={`text-sm rounded-full px-3 py-1 ${
-                    selectedPackage?.id === pkg.id
-                      ? "bg-white text-slate-950"
-                      : "bg-slate-100 text-slate-800"
-                  }`}
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className="mb-5">
+              <h2 className="text-xl font-semibold text-slate-900">Direct deposit</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Enter your full routing and account number. The portal stores a masked display version for the UI.
+              </p>
+            </div>
+
+            <form onSubmit={onSaveDeposit} className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Bank name</label>
+                <input
+                  type="text"
+                  value={depositForm.bankName}
+                  onChange={(e) => setDepositForm((prev) => ({ ...prev, bankName: e.target.value }))}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Account type</label>
+                <select
+                  value={depositForm.accountType}
+                  onChange={(e) => setDepositForm((prev) => ({ ...prev, accountType: e.target.value }))}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
                 >
-                  {pkg.status}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-        {selectedPackage ? (
-          <>
-            <div className="text-sm text-slate-500">Shipment details</div>
-            <h2 className="text-2xl font-bold text-slate-950 mt-1">{selectedPackage.id}</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
-                <div className="text-sm text-slate-500 mb-3">Package information</div>
-                <div className="space-y-3 text-sm text-slate-700">
-                  <div className="flex justify-between gap-4">
-                    <span>Recipient</span>
-                    <span className="font-semibold text-slate-950">{selectedPackage.recipient}</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span>Ship date</span>
-                    <span className="font-semibold text-slate-950">{formatDate(selectedPackage.date)}</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span>Status</span>
-                    <span className="font-semibold text-slate-950">{selectedPackage.status}</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span>Destination</span>
-                    <span className="font-semibold text-slate-950">{selectedPackage.destination}</span>
-                  </div>
-                </div>
+                  <option value="Checking">Checking</option>
+                  <option value="Savings">Savings</option>
+                </select>
               </div>
 
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
-                <div className="text-sm text-slate-500 mb-3">Tracking summary</div>
-                <div className="space-y-3 text-sm text-slate-700">
-                  <div className="flex justify-between gap-4">
-                    <span>Carrier</span>
-                    <span className="font-semibold text-slate-950">Logistive Ground</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span>Service level</span>
-                    <span className="font-semibold text-slate-950">Standard Parcel</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span>Tracking number</span>
-                    <span className="font-semibold text-slate-950">{selectedPackage.id}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div>No tracking data found.</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ProfilePage({ employee, profile, onSaveProfile, onBack }) {
-  const [formData, setFormData] = useState(() =>
-    profile || {
-      email: employee.email || "",
-      phone: "",
-      address: "",
-    }
-  );
-  const [savedMessage, setSavedMessage] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setSavedMessage("");
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSavedMessage("");
-
-    const result = await onSaveProfile(formData);
-
-    setSaving(false);
-
-    if (result?.success) {
-      setSavedMessage("Profile updated successfully.");
-    } else {
-      setSavedMessage("Unable to update profile.");
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-8">
-      <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
-        <div>
-          <div className="text-sm text-slate-500">Employee profile</div>
-          <h2 className="text-3xl font-bold text-slate-950 mt-1">Profile settings</h2>
-          <div className="text-sm text-slate-500 mt-2">
-            Update your phone number, address, and email information.
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onBack}
-            className="rounded-2xl border border-slate-300 px-5 py-3 text-slate-700 hover:bg-slate-50"
-          >
-            Back
-          </button>
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4">
-            <div className="text-xs text-slate-500">Employee ID</div>
-            <div className="font-semibold text-slate-950">{employee.employeeId}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 2xl:grid-cols-[0.9fr_1.4fr] gap-8 mt-8">
-        <div className="space-y-5">
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
-            <div className="text-sm text-slate-500 mb-3">Basic information</div>
-            <div className="space-y-3 text-sm text-slate-700">
-              <div className="flex justify-between gap-4">
-                <span>Name</span>
-                <span className="font-semibold text-slate-950">{employee.name}</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span>Department</span>
-                <span className="font-semibold text-slate-950">{employee.department}</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span>Position</span>
-                <span className="font-semibold text-slate-950">{employee.position}</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span>Work location</span>
-                <span className="font-semibold text-slate-950">{employee.location}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
-            <div className="text-sm text-slate-500 mb-3">Security notice</div>
-            <div className="text-sm text-slate-700">
-              Passwords are case sensitive. For security, this portal logs users out after 7 minutes of inactivity.
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 p-6">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div>
-              <label className="text-sm font-medium text-slate-700">Full name</label>
-              <input
-                value={employee.name}
-                disabled
-                className="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-slate-500 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-700">Employee ID</label>
-              <input
-                value={employee.employeeId}
-                disabled
-                className="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-slate-500 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-700">Email address</label>
-              <div className="mt-2 relative">
-                <Mail className="h-5 w-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Routing number</label>
                 <input
-                  value={formData?.email || ""}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 pl-12 pr-4 py-3 outline-none focus:border-slate-950"
-                  placeholder="Email address"
+                  type="text"
+                  inputMode="numeric"
+                  value={depositForm.routingNumber}
+                  onChange={(e) =>
+                    setDepositForm((prev) => ({
+                      ...prev,
+                      routingNumber: e.target.value.replace(/\D/g, "").slice(0, 9),
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                  placeholder="9 digit routing number"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="text-sm font-medium text-slate-700">Phone number</label>
-              <div className="mt-2 relative">
-                <Phone className="h-5 w-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Account number</label>
                 <input
-                  value={formData?.phone || ""}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 pl-12 pr-4 py-3 outline-none focus:border-slate-950"
-                  placeholder="Phone number"
+                  type="text"
+                  inputMode="numeric"
+                  value={depositForm.accountNumber}
+                  onChange={(e) =>
+                    setDepositForm((prev) => ({
+                      ...prev,
+                      accountNumber: e.target.value.replace(/\D/g, "").slice(0, 17),
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                  placeholder="Full account number"
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="mt-6">
-            <label className="text-sm font-medium text-slate-700">Home address</label>
-            <div className="mt-2 relative">
-              <MapPin className="h-5 w-5 text-slate-400 absolute left-4 top-4" />
-              <textarea
-                value={formData?.address || ""}
-                onChange={(e) => handleChange("address", e.target.value)}
-                rows={5}
-                className="w-full rounded-2xl border border-slate-300 pl-12 pr-4 py-3 outline-none focus:border-slate-950 resize-none"
-                placeholder="Home address"
-              />
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="rounded-2xl bg-slate-950 text-white px-6 py-3 font-medium flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? "Saving..." : "Save changes"}
-            </button>
-
-            {savedMessage && (
-              <div
-                className={`text-sm ${
-                  savedMessage.includes("successfully") ? "text-emerald-700" : "text-red-600"
-                }`}
-              >
-                {savedMessage}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                <p>Masked routing shown in portal: <span className="font-medium text-slate-900">{maskRoutingNumber(depositForm.routingNumber)}</span></p>
+                <p className="mt-1">Masked account shown in portal: <span className="font-medium text-slate-900">{maskAccountNumber(depositForm.accountNumber)}</span></p>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function HelpPage() {
-  const [selectedHelp, setSelectedHelp] = useState("manager");
-
-  const helpItems = [
-    {
-      key: "manager",
-      title: "Manager Contact",
-      description: "Direct supervisor contact for payroll and employee support.",
-    },
-    {
-      key: "payroll",
-      title: "Payroll Support",
-      description: "Questions about deductions, direct deposit, tax forms, or paycheck timing.",
-    },
-    {
-      key: "portal",
-      title: "Portal Access",
-      description: "Login issues, password help, and employee portal assistance.",
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 xl:grid-cols-[0.9fr_1.3fr] gap-6">
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-        <div className="text-sm text-slate-500">Support center</div>
-        <h2 className="text-2xl font-bold text-slate-950 mt-1">Help</h2>
-        <div className="text-sm text-slate-500 mt-1">
-          Select a support option to view details.
-        </div>
-
-        <div className="space-y-3 mt-5">
-          {helpItems.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => setSelectedHelp(item.key)}
-              className={`w-full text-left rounded-2xl border p-4 transition ${
-                selectedHelp === item.key
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-white hover:bg-slate-50"
-              }`}
-            >
-              <div className="font-semibold">{item.title}</div>
-              <div
-                className={`text-sm mt-1 ${
-                  selectedHelp === item.key ? "text-slate-300" : "text-slate-500"
-                }`}
-              >
-                {item.description}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-6">
-        {selectedHelp === "manager" && (
-          <>
-            <div className="text-sm text-slate-500">Manager support</div>
-            <h2 className="text-2xl font-bold text-slate-950 mt-1">Mark Moore</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5 flex items-start gap-3">
-                <Mail className="h-5 w-5 text-slate-700 mt-1" />
-                <div>
-                  <div className="text-sm text-slate-500">Email</div>
-                  <div className="font-semibold text-slate-950">mark.moore@logistivellc.com</div>
+              {depositMessage ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {depositMessage}
                 </div>
-              </div>
+              ) : null}
 
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5 flex items-start gap-3">
-                <Phone className="h-5 w-5 text-slate-700 mt-1" />
-                <div>
-                  <div className="text-sm text-slate-500">Phone</div>
-                  <div className="font-semibold text-slate-950">(404) 555-0186</div>
+              {depositError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {depositError}
                 </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {selectedHelp === "payroll" && (
-          <>
-            <div className="text-sm text-slate-500">Payroll assistance</div>
-            <h2 className="text-2xl font-bold text-slate-950 mt-1">Payroll Support</h2>
-            <div className="mt-6 rounded-2xl bg-slate-50 border border-slate-200 p-5 text-sm text-slate-700">
-              Contact your manager first for statement questions, deposit timing, and payroll record review.
-            </div>
-          </>
-        )}
-
-        {selectedHelp === "portal" && (
-          <>
-            <div className="text-sm text-slate-500">Portal assistance</div>
-            <h2 className="text-2xl font-bold text-slate-950 mt-1">Portal Access</h2>
-            <div className="mt-6 rounded-2xl bg-slate-50 border border-slate-200 p-5 text-sm text-slate-700">
-              For login or access issues, contact Mark Moore and request an employee portal reset.
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function LoginPage({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const submitLogin = async (e) => {
-    e.preventDefault();
-    if (loading) return;
-
-    setError("");
-    setLoading(true);
-
-    try {
-      const normalizedEmail = email.trim().toLowerCase();
-
-      if (!normalizedEmail || !password) {
-        setError("Enter your email and password.");
-        return;
-      }
-
-      const { data: authData, error: signInError } =
-        await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        });
-
-      if (signInError || !authData?.user) {
-        console.error("Sign in error:", signInError);
-        setError(signInError?.message || "Login failed.");
-        return;
-      }
-
-      const { data: directoryRow, error: directoryError } = await supabase
-        .from("employee_directory")
-        .select("*")
-        .eq("auth_email", normalizedEmail)
-        .single();
-
-      if (directoryError || !directoryRow) {
-        console.error("Employee record load error:", directoryError);
-        setError("Employee record not found.");
-        await supabase.auth.signOut();
-        return;
-      }
-
-      onLogin(mapDirectoryEmployee(directoryRow));
-    } catch (loginError) {
-      console.error("Login error:", loginError);
-      setError(loginError?.message || "Something went wrong while signing in.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] w-full max-w-6xl bg-white rounded-[32px] overflow-hidden border border-slate-200 shadow-2xl">
-          <div className="bg-slate-950 text-white p-10 lg:p-14 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.10),transparent_35%)]" />
-            <div className="relative z-10">
-              <img
-                src={COMPANY.logo}
-                alt="Company logo"
-                className="h-24 lg:h-28 w-auto rounded-md"
-              />
-
-              <div className="mt-10 text-sm uppercase tracking-[0.25em] text-slate-300">
-                Secure employee access
-              </div>
-
-              <h1 className="text-4xl font-bold mt-4 leading-tight">
-                Access your Logistive employee portal.
-              </h1>
-
-              <p className="mt-4 text-slate-300 max-w-lg">
-                Securely sign in to view your payroll, paystubs, shipment activity, profile details, direct deposit, and tax documents.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-8 lg:p-14 flex items-center">
-            <form onSubmit={submitLogin} className="w-full max-w-md mx-auto">
-              <div className="text-sm text-slate-500">
-                {COMPANY.employeePortalTitle} • {COMPANY.buildTag}
-              </div>
-              <h2 className="text-3xl font-bold text-slate-950 mt-1">Sign in</h2>
-              <p className="text-sm text-slate-600 mt-2">
-                Use your employee email and password to access your secure account.
-              </p>
-
-              <div className="mt-8 space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Email</label>
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
-                    placeholder="Enter email"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Password</label>
-                  <div className="mt-2 relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-12 outline-none focus:border-slate-950"
-                      placeholder="Enter password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
+              ) : null}
 
               <button
                 type="submit"
-                disabled={loading}
-                className="mt-6 w-full rounded-2xl bg-slate-950 text-white px-4 py-3 font-medium disabled:opacity-60"
+                disabled={depositSaving}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-70"
               >
-                {loading ? "Signing in..." : "Sign in securely"}
+                {depositSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
+                {depositSaving ? "Saving deposit info..." : "Save direct deposit"}
               </button>
             </form>
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }
 
-function ProtectedApp({ employee, logout }) {
-  const [page, setPage] = useState("dashboard");
-  const [employeeProfiles, setEmployeeProfiles] = useState({});
-  const [profilesLoaded, setProfilesLoaded] = useState(false);
-  const [depositRecords, setDepositRecords] = useState({});
-  const [depositLoaded, setDepositLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadProfiles = async () => {
-      const employeeKey = employee.username.toLowerCase();
-
-      const { data, error } = await supabase
-        .from("employee_profiles")
-        .select("employee_username, email, phone, address")
-        .eq("employee_username", employeeKey)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (error) {
-        console.error("Profile load error:", error);
-      }
-
-      const fallbackProfile = {
-        email: employee.email || "",
-        phone: employee.phone || "",
-        address: employee.address || "",
-      };
-
-      const mapped = {
-        [employeeKey]: data
-          ? {
-              email: data.email || "",
-              phone: data.phone || "",
-              address: data.address || "",
-            }
-          : fallbackProfile,
-      };
-
-      setEmployeeProfiles(mapped);
-      setProfilesLoaded(true);
-    };
-
-    loadProfiles();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [employee]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadDeposits = async () => {
-      const employeeKey = employee.username.toLowerCase();
-
-      const { data, error } = await supabase
-        .from("employee_direct_deposit")
-        .select(
-          "employee_username, status, bank_name, account_type, routing_mask, account_mask, effective_date"
-        )
-        .eq("employee_username", employeeKey)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (error) {
-        console.error("Direct deposit load error:", error);
-      }
-
-      const fallbackDeposit = DIRECT_DEPOSIT_DATA[employeeKey] || {
-        status: "Not enrolled",
-        bankName: "",
-        accountType: "Checking",
-        routingMask: "",
-        accountMask: "",
-        routingNumber: "",
-        accountNumber: "",
-        effectiveDate: "",
-      };
-
-      const mapped = {
-        [employeeKey]: data
-          ? {
-              status: data.status || "Not enrolled",
-              bankName: data.bank_name || "",
-              accountType: data.account_type || "Checking",
-              routingMask: data.routing_mask || "",
-              accountMask: data.account_mask || "",
-              routingNumber: "",
-              accountNumber: "",
-              effectiveDate: data.effective_date || "",
-            }
-          : fallbackDeposit,
-      };
-
-      setDepositRecords(mapped);
-      setDepositLoaded(true);
-    };
-
-    loadDeposits();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [employee]);
-
-  const activeProfile = employeeProfiles[employee.username.toLowerCase()] || {
-    email: employee.email || "",
-    phone: employee.phone || "",
-    address: employee.address || "",
-  };
-
-  const handleSaveProfile = async (updatedProfile) => {
-    const payload = {
-      employee_username: employee.username.toLowerCase(),
-      full_name: employee.name,
-      employee_id: employee.employeeId,
-      email: updatedProfile.email,
-      phone: updatedProfile.phone,
-      address: updatedProfile.address,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase
-      .from("employee_profiles")
-      .upsert(payload, { onConflict: "employee_username" });
-
-    if (error) {
-      console.error("Profile update error:", error);
-      return { success: false };
-    }
-
-    setEmployeeProfiles((prev) => ({
-      ...prev,
-      [employee.username.toLowerCase()]: {
-        email: updatedProfile.email,
-        phone: updatedProfile.phone,
-        address: updatedProfile.address,
-      },
-    }));
-
-    return { success: true };
-  };
-
-  const activeDeposit = depositRecords[employee.username.toLowerCase()] || {
-    status: "Not enrolled",
-    bankName: "",
-    accountType: "Checking",
-    routingMask: "",
-    accountMask: "",
-    routingNumber: "",
-    accountNumber: "",
-    effectiveDate: "",
-  };
-
-  const handleSaveDeposit = async (updatedDeposit) => {
-    const employeeKey = employee.username.toLowerCase();
-    const routingNumber = digitsOnly(updatedDeposit.routingNumber);
-    const accountNumber = digitsOnly(updatedDeposit.accountNumber);
-    const shouldStoreBanking =
-      updatedDeposit.status !== "Not enrolled" && updatedDeposit.accountType !== "Paper check";
-
-    if (shouldStoreBanking) {
-      if (routingNumber.length !== 9) {
-        return { success: false, message: "Enter a valid 9-digit routing number." };
-      }
-
-      if (accountNumber.length < 4) {
-        return { success: false, message: "Enter a valid account number." };
-      }
-    }
-
-    const routingMask = shouldStoreBanking ? maskRoutingNumber(routingNumber) : "";
-    const accountMask = shouldStoreBanking ? maskAccountNumber(accountNumber) : "";
-    const effectiveDate = updatedDeposit.effectiveDate || todayIsoDate();
-
-    const payload = {
-      employee_username: employeeKey,
-      status: updatedDeposit.status,
-      bank_name: updatedDeposit.bankName,
-      account_type: updatedDeposit.accountType,
-      routing_mask: routingMask,
-      account_mask: accountMask,
-      effective_date: effectiveDate || null,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase
-      .from("employee_direct_deposit")
-      .upsert(payload, { onConflict: "employee_username" });
-
-    if (error) {
-      console.error("Direct deposit update error:", error);
-      return { success: false, message: "Unable to update direct deposit." };
-    }
-
-    setDepositRecords((prev) => ({
-      ...prev,
-      [employeeKey]: {
-        status: updatedDeposit.status,
-        bankName: updatedDeposit.bankName,
-        accountType: updatedDeposit.accountType,
-        routingMask,
-        accountMask,
-        routingNumber: "",
-        accountNumber: "",
-        effectiveDate,
-      },
-    }));
-
-    return {
-      success: true,
-      routingMask,
-      accountMask,
-      effectiveDate,
-      message: shouldStoreBanking
-        ? `Direct deposit saved. Your bank details are now stored securely and displayed as ${accountMask}.`
-        : "Payment method saved. Direct deposit is not currently active for this employee.",
-    };
-  };
-
-  const pageContent = (() => {
-    if (!profilesLoaded && page === "profile") {
-      return (
-        <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-8">
-          Loading profile...
-        </div>
-      );
-    }
-
-    if (page === "pay") return <PayPage employee={employee} />;
-
-    if (!depositLoaded && page === "deposit") {
-      return (
-        <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-8">
-          Loading direct deposit...
-        </div>
-      );
-    }
-
-    if (page === "deposit") {
-      return (
-        <DirectDepositPage
-          key={`${employee.username}-${activeDeposit.status}-${activeDeposit.bankName}-${activeDeposit.accountType}-${activeDeposit.routingMask}-${activeDeposit.accountMask}-${activeDeposit.effectiveDate}`}
-          employee={employee}
-          depositInfo={activeDeposit}
-          onSaveDeposit={handleSaveDeposit}
-        />
-      );
-    }
-
-    if (page === "taxes") return <TaxDocumentsPage employee={employee} />;
-    if (page === "tracking") return <TrackingPage employee={employee} />;
-    if (page === "profile") {
-      return (
-        <ProfilePage
-          key={`${employee.username}-${activeProfile.email}-${activeProfile.phone}-${activeProfile.address}`}
-          employee={employee}
-          profile={activeProfile}
-          onSaveProfile={handleSaveProfile}
-          onBack={() => setPage("dashboard")}
-        />
-      );
-    }
-    if (page === "help") return <HelpPage />;
-    return <DashboardPage employee={employee} />;
-  })();
-
+function TrackingTab({ employee }) {
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      <div className="flex-1 p-4 lg:p-6">
-        <div className="max-w-[1700px] mx-auto grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
-          <Sidebar page={page} setPage={setPage} logout={logout} />
+    <div className="rounded-3xl bg-white p-6 shadow-sm">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-slate-900">Tracking</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Recent package and shipment activity associated with your employee account.
+        </p>
+      </div>
 
-          <div className="min-w-0">
-            <Topbar employee={employee} />
-            {pageContent}
+      <div className="grid gap-4">
+        {employee.tracking.map((item) => (
+          <div key={item.trackingNumber} className="rounded-2xl border border-slate-200 p-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{item.label}</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{item.trackingNumber}</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Recipient: {item.recipient} • Destination: {item.destination}
+                </p>
+              </div>
+              <div className="text-left lg:text-right">
+                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-slate-700">
+                  {item.status}
+                </span>
+                <p className="mt-2 text-sm text-slate-500">Updated {formatShortDate(item.date)}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfileTab({ profileForm, setProfileForm, onSaveProfile, profileSaving, profileMessage, employee }) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <div className="rounded-3xl bg-white p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold text-slate-900">Profile</h1>
+        <div className="mt-6 space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+          <div>
+            <p className="text-sm text-slate-500">Full name</p>
+            <p className="font-medium text-slate-900">{employee.full_name}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500">Username</p>
+            <p className="font-medium text-slate-900">{employee.username}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500">Department</p>
+            <p className="font-medium text-slate-900">{employee.department}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500">Position</p>
+            <p className="font-medium text-slate-900">{employee.position}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500">Location</p>
+            <p className="font-medium text-slate-900">{employee.location}</p>
           </div>
         </div>
       </div>
 
-      <Footer />
+      <div className="rounded-3xl bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-slate-900">Update profile</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Edit your phone number, address, and email here. Email remains hidden elsewhere in the portal.
+        </p>
+
+        <form onSubmit={onSaveProfile} className="mt-6 space-y-4">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Phone number</label>
+            <input
+              type="text"
+              value={profileForm.phone}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, phone: e.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Address</label>
+            <input
+              type="text"
+              value={profileForm.address}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, address: e.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
+            <input
+              type="email"
+              value={profileForm.email}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+            />
+          </div>
+
+          {profileMessage ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {profileMessage}
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={profileSaving}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-70"
+          >
+            {profileSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <User className="h-5 w-5" />}
+            {profileSaving ? "Saving profile..." : "Save profile changes"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function SupportTab() {
+  return (
+    <div className="rounded-3xl bg-white p-6 shadow-sm">
+      <h1 className="text-2xl font-semibold text-slate-900">Support</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        Contact support for payroll, access, or shipment assistance.
+      </p>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 p-5">
+          <Phone className="mb-4 h-5 w-5 text-slate-700" />
+          <p className="text-sm text-slate-500">Phone</p>
+          <p className="mt-1 font-semibold text-slate-900">{SUPPORT_CONTACT.phone}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 p-5">
+          <Mail className="mb-4 h-5 w-5 text-slate-700" />
+          <p className="text-sm text-slate-500">Email</p>
+          <p className="mt-1 font-semibold text-slate-900">{SUPPORT_CONTACT.email}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 p-5">
+          <User className="mb-4 h-5 w-5 text-slate-700" />
+          <p className="text-sm text-slate-500">Contact</p>
+          <p className="mt-1 font-semibold text-slate-900">{SUPPORT_CONTACT.name}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminTab() {
+  const employees = Object.values(EMPLOYEE_DIRECTORY_FALLBACK);
+
+  return (
+    <div className="rounded-3xl bg-white p-6 shadow-sm">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-slate-900">Admin</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Multi employee view for payroll and employee directory review.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-separate border-spacing-y-3">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-[0.22em] text-slate-500">
+              <th className="px-4">Employee</th>
+              <th className="px-4">Username</th>
+              <th className="px-4">ID</th>
+              <th className="px-4">Department</th>
+              <th className="px-4">Position</th>
+            </tr>
+          </thead>
+          <tbody>
+            {employees.map((employee) => (
+              <tr key={employee.username} className="rounded-2xl bg-slate-50 text-sm text-slate-700">
+                <td className="rounded-l-2xl px-4 py-4 font-medium text-slate-900">{employee.full_name}</td>
+                <td className="px-4 py-4">{employee.username}</td>
+                <td className="px-4 py-4">{employee.employee_id}</td>
+                <td className="px-4 py-4">{employee.department}</td>
+                <td className="rounded-r-2xl px-4 py-4">{employee.position}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 export default function App() {
-  const [authenticatedEmployee, setAuthenticatedEmployee] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [view, setView] = useState("login");
+  const [session, setSession] = useState(null);
+  const [employee, setEmployee] = useState(null);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [loadingSession, setLoadingSession] = useState(false);
+
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState("");
+  const [forgotError, setForgotError] = useState("");
+
+  const [resetPassword, setResetPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
+
+  const [depositForm, setDepositForm] = useState({
+    bankName: "",
+    accountType: "Checking",
+    routingNumber: "",
+    accountNumber: "",
+  });
+  const [depositSaving, setDepositSaving] = useState(false);
+  const [depositMessage, setDepositMessage] = useState("");
+  const [depositError, setDepositError] = useState("");
+
+  const [profileForm, setProfileForm] = useState({
+    phone: "(404) 555 0191",
+    address: "Stone Mountain, GA",
+    email: "",
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+
+  const [selectedStub, setSelectedStub] = useState(null);
+
+  const isAdmin = useMemo(
+    () => ADMIN_USERNAMES.includes(String(employee?.username || "").toLowerCase()),
+    [employee]
+  );
+
+  const loadEmployeeFromUser = useCallback(async (user) => {
+    if (!user) {
+      setEmployee(null);
+      return;
+    }
+
+    const email = String(user.email || "").toLowerCase();
+    let username = "";
+
+    try {
+      const { data } = await supabase
+        .from("employee_directory")
+        .select("username, auth_email, full_name, employee_id, department, position, location")
+        .eq("auth_email", email)
+        .maybeSingle();
+
+      if (data?.username) {
+        username = String(data.username).toLowerCase();
+      }
+    } catch (error) {
+      console.error("Employee directory fetch failed", error);
+    }
+
+    if (!username) {
+      const fallbackMatch = Object.values(EMPLOYEE_DIRECTORY_FALLBACK).find(
+        (entry) => String(entry.auth_email).toLowerCase() === email
+      );
+      username = fallbackMatch?.username || "";
+    }
+
+    const details = getEmployeeData(username);
+
+    if (!details) {
+      setEmployee(null);
+      return;
+    }
+
+    setEmployee(details);
+    setDepositForm({
+      bankName: details.deposit.bankName,
+      accountType: details.deposit.accountType,
+      routingNumber: details.deposit.routingNumber,
+      accountNumber: details.deposit.accountNumber,
+    });
+    setProfileForm((prev) => ({
+      ...prev,
+      address: details.location,
+      email: details.auth_email,
+    }));
+  }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    const hydrateEmployee = async (email) => {
-      const normalizedEmail = email?.toLowerCase?.() || "";
-
-      if (!normalizedEmail) return null;
-
-      const { data: directoryRow, error } = await supabase
-        .from("employee_directory")
-        .select("*")
-        .eq("auth_email", normalizedEmail)
-        .single();
-
-      if (error || !directoryRow) {
-        console.error("Session employee load error:", error);
-        return null;
-      }
-
-      return mapDirectoryEmployee(directoryRow);
-    };
-
-    const restoreSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-
-      if (session?.user?.email) {
-        const employee = await hydrateEmployee(session.user.email);
-        if (mounted) {
-          setAuthenticatedEmployee(employee);
-        }
-      } else {
-        setAuthenticatedEmployee(null);
-      }
-
+    const forceStopLoading = window.setTimeout(() => {
       if (mounted) {
-        setAuthChecked(true);
+        setLoadingSession(false);
+        setView((prev) => (prev === "portal" || prev === "reset" || prev === "forgot" ? prev : "login"));
+      }
+    }, 4000);
+
+    const bootstrapSession = async () => {
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const type = hashParams.get("type");
+        if (type === "recovery") {
+          if (mounted) {
+            setView("reset");
+          }
+          return;
+        }
+
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error(error);
+        }
+
+        if (!mounted) return;
+
+        setSession(data?.session ?? null);
+        if (data?.session?.user) {
+          await loadEmployeeFromUser(data.session.user);
+          if (mounted) {
+            setView("portal");
+          }
+        } else if (mounted) {
+          setView("login");
+        }
+      } catch (error) {
+        console.error("Session bootstrap failed", error);
+        if (mounted) {
+          setSession(null);
+          setEmployee(null);
+          setView("login");
+        }
+      } finally {
+        if (mounted) {
+          setLoadingSession(false);
+        }
       }
     };
 
-    restoreSession();
+    bootstrapSession();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
-      if (session?.user?.email) {
-        const employee = await hydrateEmployee(session.user.email);
-        if (mounted) {
-          setAuthenticatedEmployee(employee);
-        }
-      } else {
-        setAuthenticatedEmployee(null);
-      }
+      try {
+        setSession(newSession ?? null);
 
-      if (mounted) {
-        setAuthChecked(true);
+        if (event === "PASSWORD_RECOVERY") {
+          setView("reset");
+          return;
+        }
+
+        if (newSession?.user) {
+          await loadEmployeeFromUser(newSession.user);
+          if (mounted) {
+            setView("portal");
+          }
+        } else if (view !== "forgot") {
+          setEmployee(null);
+          setView("login");
+        }
+      } catch (error) {
+        console.error("Auth state change failed", error);
+        if (mounted) {
+          setEmployee(null);
+          setView("login");
+        }
+      } finally {
+        if (mounted) {
+          setLoadingSession(false);
+        }
       }
     });
 
     return () => {
       mounted = false;
+      window.clearTimeout(forceStopLoading);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loadEmployeeFromUser, view]);
 
-  useEffect(() => {
-    if (!authenticatedEmployee) return;
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
 
-    let inactivityTimer;
+    try {
+      const username = String(loginForm.username || "").trim().toLowerCase();
+      const password = String(loginForm.password || "");
 
-    const logoutUser = async () => {
-      alert("You were logged out due to 7 minutes of inactivity.");
-      await supabase.auth.signOut();
-      setAuthenticatedEmployee(null);
-    };
+      if (!username || !password) {
+        setLoginError("Enter your username and password.");
+        return;
+      }
 
-    const resetTimer = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(logoutUser, 7 * 60 * 1000);
-    };
+      let email = EMPLOYEE_DIRECTORY_FALLBACK[username]?.auth_email || "";
 
-    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+      try {
+        const { data } = await supabase
+          .from("employee_directory")
+          .select("auth_email")
+          .eq("username", username)
+          .maybeSingle();
 
-    events.forEach((eventName) => {
-      window.addEventListener(eventName, resetTimer);
-    });
+        if (data?.auth_email) {
+          email = data.auth_email;
+        }
+      } catch (error) {
+        console.error("Directory email lookup failed", error);
+      }
 
-    resetTimer();
+      if (!email) {
+        setLoginError("That username was not found in the employee directory.");
+        return;
+      }
 
-    return () => {
-      clearTimeout(inactivityTimer);
-      events.forEach((eventName) => {
-        window.removeEventListener(eventName, resetTimer);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-    };
-  }, [authenticatedEmployee]);
 
-  const handleLogin = (employee) => {
-    setAuthenticatedEmployee(employee);
+      if (error) {
+        setLoginError(error.message || "Unable to sign in. Please try again.");
+        return;
+      }
+
+      setLoginForm({ username: username.toLowerCase(), password: "" });
+      setActiveTab("dashboard");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotError("");
+    setForgotMessage("");
+    setForgotLoading(true);
+
+    try {
+      if (!forgotEmail.trim()) {
+        setForgotError("Enter your employee email address.");
+        return;
+      }
+
+      const redirectTo = `${window.location.origin}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo,
+      });
+
+      if (error) {
+        setForgotError(error.message || "Unable to send reset link.");
+        return;
+      }
+
+      setForgotMessage("Reset link sent. Check your email and open the recovery link.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setResetError("");
+    setResetMessage("");
+    setResetLoading(true);
+
+    try {
+      if (!resetPassword || !confirmPassword) {
+        setResetError("Enter and confirm your new password.");
+        return;
+      }
+
+      if (resetPassword.length < 8) {
+        setResetError("Your new password must be at least 8 characters.");
+        return;
+      }
+
+      if (resetPassword !== confirmPassword) {
+        setResetError("Passwords do not match.");
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: resetPassword });
+      if (error) {
+        setResetError(error.message || "Unable to update password.");
+        return;
+      }
+
+      setResetMessage("Password updated. You can now sign in with your new password.");
+      setTimeout(() => {
+        setView("login");
+        setResetPassword("");
+        setConfirmPassword("");
+      }, 1200);
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setAuthenticatedEmployee(null);
+    setSession(null);
+    setEmployee(null);
+    setActiveTab("dashboard");
+    setView("login");
   };
 
-  if (!authChecked) {
+  const handleSaveDeposit = async (e) => {
+    e.preventDefault();
+    setDepositError("");
+    setDepositMessage("");
+    setDepositSaving(true);
+
+    try {
+      const routing = String(depositForm.routingNumber || "").replace(/\D/g, "");
+      const account = String(depositForm.accountNumber || "").replace(/\D/g, "");
+
+      if (!depositForm.bankName.trim()) {
+        setDepositError("Enter a bank name.");
+        return;
+      }
+
+      if (routing.length !== 9) {
+        setDepositError("Routing number must be exactly 9 digits.");
+        return;
+      }
+
+      if (account.length < 6) {
+        setDepositError("Account number must be at least 6 digits.");
+        return;
+      }
+
+      const updatedDeposit = {
+        bankName: depositForm.bankName.trim(),
+        accountType: depositForm.accountType,
+        routingNumber: routing,
+        accountNumber: account,
+        maskedRouting: maskRoutingNumber(routing),
+        maskedAccount: maskAccountNumber(account),
+        lastUpdated: new Date().toISOString().slice(0, 10),
+      };
+
+      setEmployee((prev) =>
+        prev
+          ? {
+              ...prev,
+              deposit: updatedDeposit,
+            }
+          : prev
+      );
+
+      setDepositMessage(
+        `Direct deposit updated successfully. Your account now displays as ${updatedDeposit.maskedAccount}.`
+      );
+    } finally {
+      setDepositSaving(false);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileMessage("");
+
+    setTimeout(() => {
+      setEmployee((prev) =>
+        prev
+          ? {
+              ...prev,
+              location: profileForm.address || prev.location,
+              auth_email: profileForm.email || prev.auth_email,
+            }
+          : prev
+      );
+      setProfileMessage("Profile updates saved.");
+      setProfileSaving(false);
+    }, 500);
+  };
+
+  const generatePaystubPdf = (stub) => {
+    if (!employee || !stub) return;
+
+    const doc = new jsPDF({ unit: "pt", format: "letter" });
+    const totalTaxes = stub.federalTax + stub.socialSecurity + stub.medicare + stub.gaTax;
+    const grossWithBonus = stub.grossPay + stub.bonus;
+
+    doc.setFillColor(20, 29, 47);
+    doc.rect(0, 0, 612, 92, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    doc.text("LOGISTIVE LLC", 44, 48);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text("Payroll Statement", 44, 68);
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Employee", 44, 122);
+    doc.text("Pay Information", 320, 122);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`Name: ${employee.full_name}`, 44, 144);
+    doc.text(`Employee ID: ${employee.employee_id}`, 44, 162);
+    doc.text(`Position: ${employee.position}`, 44, 180);
+    doc.text(`Department: ${employee.department}`, 44, 198);
+
+    doc.text(`Pay Date: ${formatShortDate(stub.payDate)}`, 320, 144);
+    doc.text(`Pay Period: ${formatPayRange(stub.periodStart, stub.periodEnd)}`, 320, 162);
+    doc.text(`Pay Schedule: ${employee.scheduleLabel}`, 320, 180);
+    doc.text(`Deposit Account: ${maskAccountNumber(employee.deposit.accountNumber)}`, 320, 198);
+
+    const tableY = 236;
+    const columnX = [44, 236, 428];
+    const cardWidth = 140;
+    const cardHeight = 170;
+
+    const drawCard = (title, rows, x) => {
+      doc.setDrawColor(203, 213, 225);
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(x, tableY, cardWidth, cardHeight, 14, 14, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(title, x + 16, tableY + 24);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      let rowY = tableY + 50;
+      rows.forEach(([label, value], index) => {
+        doc.text(label, x + 16, rowY);
+        doc.text(value, x + cardWidth - 16, rowY, { align: "right" });
+        if (index !== rows.length - 1) {
+          doc.setDrawColor(226, 232, 240);
+          doc.line(x + 16, rowY + 10, x + cardWidth - 16, rowY + 10);
+        }
+        rowY += 26;
+      });
+    };
+
+    drawCard(
+      "Earnings",
+      [
+        ["Regular Hours", String(stub.regularHours)],
+        ["Hourly Rate", formatMoney(stub.hourlyRate)],
+        ["Bonus", formatMoney(stub.bonus)],
+        ["Gross Pay", formatMoney(grossWithBonus)],
+      ],
+      columnX[0]
+    );
+
+    drawCard(
+      "Taxes",
+      [
+        ["Federal", formatMoney(stub.federalTax)],
+        ["Social Security", formatMoney(stub.socialSecurity)],
+        ["Medicare", formatMoney(stub.medicare)],
+        ["Georgia Tax", formatMoney(stub.gaTax)],
+      ],
+      columnX[1]
+    );
+
+    drawCard(
+      "Net Pay Summary",
+      [
+        ["Total Taxes", formatMoney(totalTaxes)],
+        ["Deductions", formatMoney(stub.deductions)],
+        ["Net Pay", formatMoney(stub.netPay)],
+        ["Deposit", employee.deposit.accountType],
+      ],
+      columnX[2]
+    );
+
+    if (stub.watermark) {
+      doc.saveGraphicsState();
+      doc.setTextColor(220, 38, 38);
+      doc.setFontSize(28);
+      doc.text(stub.watermark, 306, 520, {
+        angle: 30,
+        align: "center",
+      });
+      doc.restoreGraphicsState();
+      doc.setTextColor(15, 23, 42);
+    }
+
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Confidential payroll information", 44, 742);
+    doc.text("© 2020–2026 Logistive LLC", 568, 742, { align: "right" });
+
+    doc.save(`paystub-${employee.username}-${stub.payDate}.pdf`);
+  };
+
+  if (loadingSession) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-700">
-        Loading secure portal...
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <div className="flex items-center gap-3 rounded-3xl bg-white px-6 py-4 shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-slate-700" />
+          <span className="text-slate-700">Loading login page...</span>
+        </div>
       </div>
     );
   }
 
-  if (!authenticatedEmployee) {
-    return <LoginPage onLogin={handleLogin} />;
+  if (view === "forgot") {
+    return (
+      <ForgotPasswordScreen
+        forgotEmail={forgotEmail}
+        setForgotEmail={setForgotEmail}
+        onSubmit={handleForgotPassword}
+        loading={forgotLoading}
+        message={forgotMessage}
+        error={forgotError}
+        onBack={() => setView("login")}
+      />
+    );
   }
 
-  return <ProtectedApp employee={authenticatedEmployee} logout={handleLogout} />;
+  if (view === "reset") {
+    return (
+      <ResetPasswordScreen
+        password={resetPassword}
+        setPassword={setResetPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        onSubmit={handleResetPassword}
+        loading={resetLoading}
+        message={resetMessage}
+        error={resetError}
+        onBack={() => setView("login")}
+      />
+    );
+  }
+
+  if (view !== "portal" || !session || !employee) {
+    return (
+      <LoginScreen
+        loginForm={loginForm}
+        setLoginForm={setLoginForm}
+        onLogin={handleLogin}
+        loginLoading={loginLoading}
+        loginError={loginError}
+        showPassword={showPassword}
+        setShowPassword={setShowPassword}
+        goToForgot={() => {
+          setForgotError("");
+          setForgotMessage("");
+          setView("forgot");
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-100 p-4 lg:p-6">
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[288px_1fr]">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          employeeName={employee.full_name}
+          onLogout={handleLogout}
+          isAdmin={isAdmin}
+        />
+
+        <main className="min-w-0">
+          {activeTab === "dashboard" ? <DashboardTab employee={employee} onViewPay={() => setActiveTab("pay")} /> : null}
+          {activeTab === "pay" ? (
+            <PayTab
+              employee={employee}
+              depositForm={depositForm}
+              setDepositForm={setDepositForm}
+              onSaveDeposit={handleSaveDeposit}
+              depositSaving={depositSaving}
+              depositMessage={depositMessage}
+              depositError={depositError}
+              onViewStub={setSelectedStub}
+              onDownloadStub={generatePaystubPdf}
+            />
+          ) : null}
+          {activeTab === "tracking" ? <TrackingTab employee={employee} /> : null}
+          {activeTab === "profile" ? (
+            <ProfileTab
+              profileForm={profileForm}
+              setProfileForm={setProfileForm}
+              onSaveProfile={handleSaveProfile}
+              profileSaving={profileSaving}
+              profileMessage={profileMessage}
+              employee={employee}
+            />
+          ) : null}
+          {activeTab === "support" ? <SupportTab /> : null}
+          {activeTab === "admin" && isAdmin ? <AdminTab /> : null}
+        </main>
+      </div>
+
+      {employee ? (
+        <PaystubModal
+          stub={selectedStub}
+          employee={employee}
+          onClose={() => setSelectedStub(null)}
+          onDownload={generatePaystubPdf}
+        />
+      ) : null}
+    </div>
+  );
 }
