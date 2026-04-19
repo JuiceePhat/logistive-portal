@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -31,26 +31,74 @@ const COMPANY = {
 
 const PAY_DATA = {
   terridh9: {
-    paySchedule: "Monthly",
+    paySchedule: "Biweekly",
     payMethod: "Direct Deposit",
     accountMask: "Account ending in 3581",
-    nextPayDate: "2026-05-10",
+    nextPayDate: "2026-04-24",
     paystubs: [
       {
         id: "PS-2026-04-10",
         payDate: "2026-04-10",
-        periodStart: "2026-03-10",
-        periodEnd: "2026-04-09",
-        grossPay: 4380.0,
+        periodStart: "2026-03-28",
+        periodEnd: "2026-04-10",
+        grossPay: 2190.0,
         overtime: 0.0,
         bonus: 0.0,
-        federalTax: 406.21,
-        stateTax: 133.4,
-        socialSecurity: 218.16,
-        medicare: 51.02,
-        otherDeductions: 0.38,
-        netPay: 3570.83,
+        federalTax: 203.11,
+        stateTax: 66.7,
+        socialSecurity: 135.78,
+        medicare: 31.96,
+        otherDeductions: 0.19,
+        netPay: 1752.26,
         pdfPath: "/paystubs/Terrianna_Howard_2026-04-10_paystub.pdf",
+      },
+      {
+        id: "PS-2026-03-27",
+        payDate: "2026-03-27",
+        periodStart: "2026-03-14",
+        periodEnd: "2026-03-27",
+        grossPay: 2190.0,
+        overtime: 0.0,
+        bonus: 120.0,
+        federalTax: 214.22,
+        stateTax: 70.36,
+        socialSecurity: 143.22,
+        medicare: 33.5,
+        otherDeductions: 0.2,
+        netPay: 1848.5,
+        pdfPath: "/paystubs/Terrianna_Howard_2026-03-27_paystub.pdf",
+      },
+      {
+        id: "PS-2026-03-13",
+        payDate: "2026-03-13",
+        periodStart: "2026-02-28",
+        periodEnd: "2026-03-13",
+        grossPay: 2190.0,
+        overtime: 0.0,
+        bonus: 0.0,
+        federalTax: 205.18,
+        stateTax: 67.38,
+        socialSecurity: 135.78,
+        medicare: 31.96,
+        otherDeductions: 0.19,
+        netPay: 1749.51,
+        pdfPath: "/paystubs/Terrianna_Howard_2026-03-13_paystub.pdf",
+      },
+      {
+        id: "PS-2026-02-27",
+        payDate: "2026-02-27",
+        periodStart: "2026-01-29",
+        periodEnd: "2026-02-27",
+        grossPay: 4680.0,
+        overtime: 0.0,
+        bonus: 180.0,
+        federalTax: 454.25,
+        stateTax: 149.31,
+        socialSecurity: 301.32,
+        medicare: 70.47,
+        otherDeductions: 0.42,
+        netPay: 3884.23,
+        pdfPath: "/paystubs/Terrianna_Howard_2026-02-27_paystub.pdf",
       },
     ],
   },
@@ -63,111 +111,79 @@ const PAY_DATA = {
       {
         id: "PS-2026-04-10",
         payDate: "2026-04-10",
-        periodStart: "2026-03-27",
-        periodEnd: "2026-04-09",
-        grossPay: 4260,
-        bonus: 60,
+        periodStart: "2026-03-28",
+        periodEnd: "2026-04-10",
+        grossPay: 2145,
+        bonus: 90,
         overtime: 0.0,
-        federalTax: 445.17,
-        stateTax: 229.61,
-        socialSecurity: 264.12,
-        medicare: 61.77,
-        otherDeductions: 0.39,
-        netPay: 3258.94,
+        federalTax: 215.63,
+        stateTax: 111.13,
+        socialSecurity: 138.57,
+        medicare: 32.41,
+        otherDeductions: 0.21,
+        netPay: 1737.05,
         pdfPath: "/paystubs/George_Qualls_2026-04-10_paystub.pdf",
+      },
+      {
+        id: "PS-2026-03-27",
+        payDate: "2026-03-27",
+        periodStart: "2026-03-14",
+        periodEnd: "2026-03-27",
+        grossPay: 2145,
+        bonus: 0,
+        overtime: 0.0,
+        federalTax: 203.44,
+        stateTax: 105.18,
+        socialSecurity: 132.99,
+        medicare: 31.1,
+        otherDeductions: 0.18,
+        netPay: 1672.11,
+        pdfPath: "/paystubs/George_Qualls_2026-03-27_paystub.pdf",
       },
       {
         id: "PS-2026-03-13",
         payDate: "2026-03-13",
-        periodStart: "2026-02-27",
-        periodEnd: "2026-03-12",
-        grossPay: 4515,
-        bonus: 315,
+        periodStart: "2026-02-28",
+        periodEnd: "2026-03-13",
+        grossPay: 2145,
+        bonus: 55,
         overtime: 0.0,
-        federalTax: 492.14,
-        stateTax: 243.36,
-        socialSecurity: 279.93,
-        medicare: 65.47,
-        otherDeductions: 0.47,
-        netPay: 3433.63,
+        federalTax: 209.02,
+        stateTax: 107.88,
+        socialSecurity: 136.4,
+        medicare: 31.9,
+        otherDeductions: 0.2,
+        netPay: 1714.6,
         pdfPath: "/paystubs/George_Qualls_2026-03-13_paystub.pdf",
       },
       {
         id: "PS-2026-02-27",
         payDate: "2026-02-27",
-        periodStart: "2026-02-13",
-        periodEnd: "2026-02-26",
-        grossPay: 4285,
-        bonus: 85,
+        periodStart: "2026-01-29",
+        periodEnd: "2026-02-27",
+        grossPay: 4590,
+        bonus: 140,
         overtime: 0.0,
-        federalTax: 441.35,
-        stateTax: 230.96,
-        socialSecurity: 265.67,
-        medicare: 62.13,
-        otherDeductions: 0.41,
-        netPay: 3284.48,
+        federalTax: 454.98,
+        stateTax: 232.11,
+        socialSecurity: 293.26,
+        medicare: 68.59,
+        otherDeductions: 0.46,
+        netPay: 3680.6,
         pdfPath: "/paystubs/George_Qualls_2026-02-27_paystub.pdf",
-      },
-      {
-        id: "PS-2026-02-13",
-        payDate: "2026-02-13",
-        periodStart: "2026-01-30",
-        periodEnd: "2026-02-12",
-        grossPay: 4420,
-        bonus: 220,
-        overtime: 0.0,
-        federalTax: 472.94,
-        stateTax: 238.24,
-        socialSecurity: 274.04,
-        medicare: 64.09,
-        otherDeductions: 0.44,
-        netPay: 3370.25,
-        pdfPath: "/paystubs/George_Qualls_2026-02-13_paystub.pdf",
-      },
-      {
-        id: "PS-2026-01-30",
-        payDate: "2026-01-30",
-        periodStart: "2026-01-16",
-        periodEnd: "2026-01-29",
-        grossPay: 4200,
-        bonus: 0,
-        overtime: 0.0,
-        federalTax: 428.4,
-        stateTax: 226.38,
-        socialSecurity: 260.4,
-        medicare: 60.9,
-        otherDeductions: 0.38,
-        netPay: 3223.54,
-        pdfPath: "/paystubs/George_Qualls_2026-01-30_paystub.pdf",
-      },
-      {
-        id: "PS-2026-01-16",
-        payDate: "2026-01-16",
-        periodStart: "2026-01-02",
-        periodEnd: "2026-01-15",
-        grossPay: 4345,
-        bonus: 145,
-        overtime: 0.0,
-        federalTax: 451.88,
-        stateTax: 234.2,
-        socialSecurity: 269.39,
-        medicare: 63.0,
-        otherDeductions: 0.42,
-        netPay: 3326.11,
-        pdfPath: "/paystubs/George_Qualls_2026-01-16_paystub.pdf",
       },
     ],
   },
   emp101: {
-    paySchedule: "Weekly",
+    paySchedule: "Biweekly",
     payMethod: "Paper Check",
     accountMask: "Example record only",
-    nextPayDate: "2026-04-17",
+    nextPayDate: "2026-04-24",
     paystubs: [
       {
         id: "PS-2026-04-10",
         payDate: "2026-04-10",
-        periodStart: "2026-04-04",
+        periodStart: "2026-03-28",
         periodEnd: "2026-04-10",
         grossPay: 2385.0,
         bonus: 0.0,
@@ -181,10 +197,10 @@ const PAY_DATA = {
         pdfPath: "/paystubs/Employee_101_2026-04-10_example_paystub.pdf",
       },
       {
-        id: "PS-2026-04-03",
-        payDate: "2026-04-03",
-        periodStart: "2026-03-28",
-        periodEnd: "2026-04-03",
+        id: "PS-2026-03-27",
+        payDate: "2026-03-27",
+        periodStart: "2026-03-14",
+        periodEnd: "2026-03-27",
         grossPay: 2310.0,
         bonus: 0.0,
         overtime: 0.0,
@@ -194,7 +210,39 @@ const PAY_DATA = {
         medicare: 33.5,
         otherDeductions: 22.5,
         netPay: 1822.02,
-        pdfPath: "/paystubs/Employee_101_2026-04-03_example_paystub.pdf",
+        pdfPath: "/paystubs/Employee_101_2026-03-27_example_paystub.pdf",
+      },
+      {
+        id: "PS-2026-03-13",
+        payDate: "2026-03-13",
+        periodStart: "2026-02-28",
+        periodEnd: "2026-03-13",
+        grossPay: 2360.0,
+        bonus: 40.0,
+        overtime: 0.0,
+        federalTax: 196.11,
+        stateTax: 102.64,
+        socialSecurity: 148.8,
+        medicare: 34.8,
+        otherDeductions: 24.1,
+        netPay: 1893.55,
+        pdfPath: "/paystubs/Employee_101_2026-03-13_example_paystub.pdf",
+      },
+      {
+        id: "PS-2026-02-27",
+        payDate: "2026-02-27",
+        periodStart: "2026-01-29",
+        periodEnd: "2026-02-27",
+        grossPay: 5040.0,
+        bonus: 80.0,
+        overtime: 0.0,
+        federalTax: 418.52,
+        stateTax: 218.67,
+        socialSecurity: 317.44,
+        medicare: 74.22,
+        otherDeductions: 50.25,
+        netPay: 4040.9,
+        pdfPath: "/paystubs/Employee_101_2026-02-27_example_paystub.pdf",
       },
     ],
   },
@@ -325,6 +373,34 @@ function formatCurrency(value) {
     style: "currency",
     currency: "USD",
   }).format(value || 0);
+}
+
+function digitsOnly(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function maskRoutingNumber(value) {
+  const digits = digitsOnly(value);
+  if (!digits) return "";
+
+  const visible = digits.slice(-4);
+  return `Routing ending in ${visible}`;
+}
+
+function maskAccountNumber(value) {
+  const digits = digitsOnly(value);
+  if (!digits) return "";
+
+  const visible = digits.slice(-4);
+  return `Account ending in ${visible}`;
+}
+
+function todayIsoDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function mapDirectoryEmployee(row) {
@@ -552,11 +628,9 @@ function PayPage({ employee }) {
   const employeeKey = employee.username.toLowerCase();
   const payInfo = PAY_DATA[employeeKey];
   const paystubs = payInfo?.paystubs || [];
-  const [selectedStub, setSelectedStub] = useState(paystubs[0] || null);
-
-  useEffect(() => {
-    setSelectedStub(paystubs[0] || null);
-  }, [employeeKey]);
+  const [selectedStubId, setSelectedStubId] = useState(paystubs[0]?.id || null);
+  const selectedStub =
+    paystubs.find((stub) => stub.id === selectedStubId) || paystubs[0] || null;
 
   if (!payInfo || !selectedStub) {
     return (
@@ -622,7 +696,7 @@ function PayPage({ employee }) {
             {paystubs.map((stub) => (
               <button
                 key={stub.id}
-                onClick={() => setSelectedStub(stub)}
+                onClick={() => setSelectedStubId(stub.id)}
                 className={`w-full text-left rounded-2xl border p-4 transition ${
                   selectedStub.id === stub.id
                     ? "border-slate-950 bg-slate-950 text-white"
@@ -746,22 +820,20 @@ function PayPage({ employee }) {
 }
 
 function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
-  const [formData, setFormData] = useState(depositInfo);
+  const [formData, setFormData] = useState(() =>
+    depositInfo || {
+      status: "Not enrolled",
+      bankName: "",
+      accountType: "Checking",
+      routingMask: "",
+      accountMask: "",
+      routingNumber: "",
+      accountNumber: "",
+      effectiveDate: "",
+    }
+  );
   const [savedMessage, setSavedMessage] = useState("");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setFormData(
-      depositInfo || {
-        status: "Not enrolled",
-        bankName: "",
-        accountType: "Checking",
-        routingMask: "",
-        accountMask: "",
-        effectiveDate: "",
-      }
-    );
-  }, [depositInfo]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({
@@ -780,11 +852,17 @@ function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
     setSaving(false);
 
     if (result?.success) {
-      setSavedMessage(
-        "Direct deposit updated successfully. Changes made after payroll has closed will take effect on the next pay cycle."
-      );
+      setFormData((prev) => ({
+        ...prev,
+        routingMask: result.routingMask || prev.routingMask || "",
+        accountMask: result.accountMask || prev.accountMask || "",
+        routingNumber: "",
+        accountNumber: "",
+        effectiveDate: result.effectiveDate || prev.effectiveDate || "",
+      }));
+      setSavedMessage(result.message || "Direct deposit saved.");
     } else {
-      setSavedMessage("Unable to update direct deposit.");
+      setSavedMessage(result?.message || "Unable to update direct deposit.");
     }
   };
 
@@ -814,6 +892,20 @@ function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
               {formData?.effectiveDate ? formatDate(formData.effectiveDate) : "Not set"}
             </div>
           </div>
+
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+            <div className="text-sm text-slate-500">Stored routing number</div>
+            <div className="font-semibold text-slate-950 mt-1">
+              {formData?.routingMask || "No routing number on file"}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+            <div className="text-sm text-slate-500">Stored account number</div>
+            <div className="font-semibold text-slate-950 mt-1">
+              {formData?.accountMask || "No account number on file"}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -822,7 +914,7 @@ function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
         <h2 className="text-2xl font-bold text-slate-950 mt-1">Banking information</h2>
 
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Direct deposit changes submitted after payroll has closed will take effect on the next pay cycle.
+          Enter your full bank details below. When you save, only masked versions are stored and only the last 4 digits remain visible in the portal.
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -876,7 +968,7 @@ function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
             <label className="text-sm font-medium text-slate-700">Routing mask</label>
             <input
               value={formData?.routingMask || ""}
-              onChange={(e) => handleChange("routingMask", e.target.value)}
+              readOnly
               className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
               placeholder="Routing ending in 1234"
             />
@@ -886,9 +978,31 @@ function DirectDepositPage({ employee, depositInfo, onSaveDeposit }) {
             <label className="text-sm font-medium text-slate-700">Account mask</label>
             <input
               value={formData?.accountMask || ""}
-              onChange={(e) => handleChange("accountMask", e.target.value)}
+              readOnly
               className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
               placeholder="Account ending in 5678"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">Routing number</label>
+            <input
+              value={formData?.routingNumber || ""}
+              onChange={(e) => handleChange("routingNumber", e.target.value)}
+              inputMode="numeric"
+              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
+              placeholder="Enter full routing number"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">Account number</label>
+            <input
+              value={formData?.accountNumber || ""}
+              onChange={(e) => handleChange("accountNumber", e.target.value)}
+              inputMode="numeric"
+              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950"
+              placeholder="Enter full account number"
             />
           </div>
         </div>
@@ -960,11 +1074,9 @@ function TaxDocumentsPage({ employee }) {
 
 function TrackingPage({ employee }) {
   const packages = TRACKING_DATA[employee.username.toLowerCase()] || [];
-  const [selectedPackage, setSelectedPackage] = useState(packages[0] || null);
-
-  useEffect(() => {
-    setSelectedPackage(packages[0] || null);
-  }, [employee.username]);
+  const [selectedPackageId, setSelectedPackageId] = useState(packages[0]?.id || null);
+  const selectedPackage =
+    packages.find((pkg) => pkg.id === selectedPackageId) || packages[0] || null;
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[0.95fr_1.35fr] gap-6">
@@ -979,7 +1091,7 @@ function TrackingPage({ employee }) {
           {packages.map((pkg) => (
             <button
               key={pkg.id}
-              onClick={() => setSelectedPackage(pkg)}
+              onClick={() => setSelectedPackageId(pkg.id)}
               className={`w-full text-left rounded-2xl border p-4 transition ${
                 selectedPackage?.id === pkg.id
                   ? "border-slate-950 bg-slate-950 text-white"
@@ -1069,19 +1181,15 @@ function TrackingPage({ employee }) {
 }
 
 function ProfilePage({ employee, profile, onSaveProfile, onBack }) {
-  const [formData, setFormData] = useState(profile);
+  const [formData, setFormData] = useState(() =>
+    profile || {
+      email: employee.email || "",
+      phone: "",
+      address: "",
+    }
+  );
   const [savedMessage, setSavedMessage] = useState("");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setFormData(
-      profile || {
-        email: employee.email || "",
-        phone: "",
-        address: "",
-      }
-    );
-  }, [profile, employee]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({
@@ -1580,6 +1688,8 @@ function ProtectedApp({ employee, logout }) {
         accountType: "Checking",
         routingMask: "",
         accountMask: "",
+        routingNumber: "",
+        accountNumber: "",
         effectiveDate: "",
       };
 
@@ -1591,6 +1701,8 @@ function ProtectedApp({ employee, logout }) {
               accountType: data.account_type || "Checking",
               routingMask: data.routing_mask || "",
               accountMask: data.account_mask || "",
+              routingNumber: "",
+              accountNumber: "",
               effectiveDate: data.effective_date || "",
             }
           : fallbackDeposit,
@@ -1651,18 +1763,40 @@ function ProtectedApp({ employee, logout }) {
     accountType: "Checking",
     routingMask: "",
     accountMask: "",
+    routingNumber: "",
+    accountNumber: "",
     effectiveDate: "",
   };
 
   const handleSaveDeposit = async (updatedDeposit) => {
+    const employeeKey = employee.username.toLowerCase();
+    const routingNumber = digitsOnly(updatedDeposit.routingNumber);
+    const accountNumber = digitsOnly(updatedDeposit.accountNumber);
+    const shouldStoreBanking =
+      updatedDeposit.status !== "Not enrolled" && updatedDeposit.accountType !== "Paper check";
+
+    if (shouldStoreBanking) {
+      if (routingNumber.length !== 9) {
+        return { success: false, message: "Enter a valid 9-digit routing number." };
+      }
+
+      if (accountNumber.length < 4) {
+        return { success: false, message: "Enter a valid account number." };
+      }
+    }
+
+    const routingMask = shouldStoreBanking ? maskRoutingNumber(routingNumber) : "";
+    const accountMask = shouldStoreBanking ? maskAccountNumber(accountNumber) : "";
+    const effectiveDate = updatedDeposit.effectiveDate || todayIsoDate();
+
     const payload = {
-      employee_username: employee.username.toLowerCase(),
+      employee_username: employeeKey,
       status: updatedDeposit.status,
       bank_name: updatedDeposit.bankName,
       account_type: updatedDeposit.accountType,
-      routing_mask: updatedDeposit.routingMask,
-      account_mask: updatedDeposit.accountMask,
-      effective_date: updatedDeposit.effectiveDate || null,
+      routing_mask: routingMask,
+      account_mask: accountMask,
+      effective_date: effectiveDate || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -1672,25 +1806,35 @@ function ProtectedApp({ employee, logout }) {
 
     if (error) {
       console.error("Direct deposit update error:", error);
-      return { success: false };
+      return { success: false, message: "Unable to update direct deposit." };
     }
 
     setDepositRecords((prev) => ({
       ...prev,
-      [employee.username.toLowerCase()]: {
+      [employeeKey]: {
         status: updatedDeposit.status,
         bankName: updatedDeposit.bankName,
         accountType: updatedDeposit.accountType,
-        routingMask: updatedDeposit.routingMask,
-        accountMask: updatedDeposit.accountMask,
-        effectiveDate: updatedDeposit.effectiveDate,
+        routingMask,
+        accountMask,
+        routingNumber: "",
+        accountNumber: "",
+        effectiveDate,
       },
     }));
 
-    return { success: true };
+    return {
+      success: true,
+      routingMask,
+      accountMask,
+      effectiveDate,
+      message: shouldStoreBanking
+        ? `Direct deposit saved. Your bank details are now stored securely and displayed as ${accountMask}.`
+        : "Payment method saved. Direct deposit is not currently active for this employee.",
+    };
   };
 
-  const pageContent = useMemo(() => {
+  const pageContent = (() => {
     if (!profilesLoaded && page === "profile") {
       return (
         <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-8">
@@ -1712,6 +1856,7 @@ function ProtectedApp({ employee, logout }) {
     if (page === "deposit") {
       return (
         <DirectDepositPage
+          key={`${employee.username}-${activeDeposit.status}-${activeDeposit.bankName}-${activeDeposit.accountType}-${activeDeposit.routingMask}-${activeDeposit.accountMask}-${activeDeposit.effectiveDate}`}
           employee={employee}
           depositInfo={activeDeposit}
           onSaveDeposit={handleSaveDeposit}
@@ -1724,6 +1869,7 @@ function ProtectedApp({ employee, logout }) {
     if (page === "profile") {
       return (
         <ProfilePage
+          key={`${employee.username}-${activeProfile.email}-${activeProfile.phone}-${activeProfile.address}`}
           employee={employee}
           profile={activeProfile}
           onSaveProfile={handleSaveProfile}
@@ -1733,7 +1879,7 @@ function ProtectedApp({ employee, logout }) {
     }
     if (page === "help") return <HelpPage />;
     return <DashboardPage employee={employee} />;
-  }, [page, employee, activeProfile, activeDeposit, profilesLoaded, depositLoaded]);
+  })();
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
